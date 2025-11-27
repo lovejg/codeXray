@@ -1,4 +1,5 @@
 export function generatePrompt(code, options = {}, userPrompt = "") {
+  // 기본 프롬프트 생성
   const basePrompt = `첨부한 코드를 분석하여 아래 항목을 설명해주세요:
 1. 프로젝트 개요
 2. 기술 스택
@@ -7,6 +8,7 @@ export function generatePrompt(code, options = {}, userPrompt = "") {
 5. 핵심 로직
 `;
 
+  // 사용자 옵션 선택에 따른 프롬프트 추가
   let optionPrompt = "\n[추가 분석 요청]\n";
 
   if (options?.architecture)
@@ -18,6 +20,7 @@ export function generatePrompt(code, options = {}, userPrompt = "") {
   if (options?.testing)
     optionPrompt += "- 테스트 누락 및 개선 제안을 해주세요.\n";
 
+  // 사용자 커스텀 프롬프트 추가
   let userPromptBlock = "";
   if (userPrompt && userPrompt.trim() !== "") {
     userPromptBlock = `\n[사용자 추가 요청]\n${userPrompt}\n`;

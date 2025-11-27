@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+// OpenAI SDK 사용해서 GPT-4o-mini 호출
 function getClient() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
