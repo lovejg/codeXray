@@ -33,14 +33,24 @@ export const analyzeCode = async (req, res) => {
 export const analyzeFile = async (req, res) => {
   try {
     const { options, userPrompt } = req.body;
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "파일이 필요합니다." });
+    }
     const fileContent = req.file.buffer.toString("utf-8"); // 업로드된 파일 내용 읽기
 
-    const finalPrompt = generatePrompt(fileContent, options, userPrompt); // 최종 프롬프트 생성
+    const parsedOptions =
+      typeof options === "string" && options.length > 0
+        ? JSON.parse(options)
+        : options;
+
+    const finalPrompt = generatePrompt(fileContent, parsedOptions, userPrompt); // 최종 프롬프트 생성
     const result = await analyzeWithOpenAI(finalPrompt); // 최종 프롬프트 AI에 넣고 답변 받기
     const analysis = new Analysis({
       code: fileContent,
       result,
-      options,
+      options: parsedOptions,
       userPrompt,
     });
     await analysis.save();

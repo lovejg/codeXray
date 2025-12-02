@@ -3,8 +3,8 @@ import express from "express";
 import cors from "cors";
 import analysisRoutes from "./routes/analysis.routes.js";
 import githubRoutes from "./routes/github.routes.js";
-
-dotenv.config();
+import { connectDB } from "./config/db.js";
+connectDB();
 
 const app = express();
 app.use(cors());

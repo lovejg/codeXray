@@ -1,5 +1,12 @@
 import express from "express";
-import { analyzeCode } from "../controllers/analysisController.js";
+import {
+  analyzeCode,
+  getHistory,
+  getHistoryDetail,
+  deleteHistory,
+  analyzeFile,
+  analyzeGithub,
+} from "../controllers/analysisController.js";
 import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
