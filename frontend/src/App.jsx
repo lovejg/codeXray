@@ -105,7 +105,11 @@ function App() {
     setShowResult(false);
   };
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${
+        isHistoryOpen ? "history-open" : "history-closed"
+      }`}
+    >
       <aside className={`history-drawer ${isHistoryOpen ? "open" : "closed"}`}>
         <button
           className="drawer-handle"
