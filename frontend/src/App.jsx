@@ -11,6 +11,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const toggleHistory = () => setIsHistoryOpen((prev) => !prev);
   const MotionHeader = motion.header;
 
   const API_BASE = useMemo(
@@ -108,22 +109,16 @@ function App() {
       <aside className={`history-drawer ${isHistoryOpen ? "open" : "closed"}`}>
         <button
           className="drawer-handle"
-          onClick={() => setIsHistoryOpen((prev) => !prev)}
+          onClick={toggleHistory}
           aria-label={isHistoryOpen ? "히스토리 닫기" : "히스토리 열기"}
         >
-          {isHistoryOpen ? "◀" : "▶"}
+          {isHistoryOpen ? "←" : "→"}
         </button>
         <div className="history-topbar">
           <div>
             <p className="eyebrow">히스토리</p>
             <h2>최근 분석</h2>
           </div>
-          <button
-            className="ghost-btn"
-            onClick={() => setIsHistoryOpen((prev) => !prev)}
-          >
-            {isHistoryOpen ? "닫기" : "열기"}
-          </button>
         </div>
         <HistoryList
           onSelect={handleSelectHistory}
@@ -141,10 +136,7 @@ function App() {
             <h1>CodeXray</h1>
             <p>코드를 한눈에 분석하는 AI 코드 인사이트 플랫폼</p>
           </div>
-          <button
-            className="ghost-btn history-toggle"
-            onClick={() => setIsHistoryOpen((prev) => !prev)}
-          >
+          <button className="ghost-btn history-toggle" onClick={toggleHistory}>
             {isHistoryOpen ? "히스토리 숨기기" : "히스토리 보기"}
           </button>
         </MotionHeader>
@@ -156,6 +148,16 @@ function App() {
           )}
         </main>
       </div>
+
+      {!isHistoryOpen && (
+        <button
+          className="history-fab"
+          onClick={toggleHistory}
+          aria-label="히스토리 열기"
+        >
+          📜 히스토리
+        </button>
+      )}
 
       {loading && <LoadingOverlay />}
     </div>

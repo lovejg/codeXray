@@ -17,6 +17,9 @@ export default function ResultViewer({ result, onReset }) {
         </div>
         <div className="panel-actions">
           <button className="ghost-btn" onClick={onReset}>
+            닫기
+          </button>
+          <button className="ghost-btn" onClick={onReset}>
             새 분석하기
           </button>
         </div>
