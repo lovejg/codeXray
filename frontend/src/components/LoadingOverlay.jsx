@@ -2,8 +2,7 @@ export default function LoadingOverlay() {
   return (
     <div className="loading-overlay">
       <div className="loader-card">
-        <div className="loader-robot">🤖</div>
-        <div className="loader-orbit">
+        <div className="loader-spinner">
           <span />
           <span />
           <span />

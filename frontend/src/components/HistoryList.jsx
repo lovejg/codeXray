@@ -16,6 +16,7 @@ export default function HistoryList({ onSelect, onReanalyze }) {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
   const handleDelete = async (id) => {
     await fetch(`${API_BASE}/api/history/${id}`, {
       method: "DELETE",
@@ -25,11 +26,10 @@ export default function HistoryList({ onSelect, onReanalyze }) {
 
   return (
     <div className="panel history-panel">
-      <div className="panel-head">
+      <div className="history-list-header">
         <div>
-          <p className="eyebrow">히스토리</p>
-          <h2>최근 분석 기록</h2>
-          <p className="muted">다시 확인하거나 재분석해 보세요.</p>
+          <p className="muted">최근 분석 기록</p>
+          <h3>이전 결과를 다시 확인하세요</h3>
         </div>
         <button className="ghost-btn" onClick={loadHistory}>
           새로고침

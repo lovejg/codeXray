@@ -9,6 +9,8 @@ import "./App.css";
 function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const MotionHeader = motion.header;
 
   const API_BASE = useMemo(
@@ -19,6 +21,7 @@ function App() {
   const handleAnalyze = async (payload) => {
     setLoading(true);
     setResult(null);
+    setShowResult(false);
     try {
       if (payload.repoUrl?.trim()) {
         const res = await fetch(`${API_BASE}/api/analyze/github`, {
@@ -35,6 +38,7 @@ function App() {
           throw new Error(data.message || "GitHub 분석에 실패했습니다.");
         }
         setResult(data.result);
+        setShowResult(true);
         return;
       }
       if (payload.file) {
@@ -52,6 +56,7 @@ function App() {
           throw new Error(data.message || "파일 분석에 실패했습니다.");
         }
         setResult(data.result);
+        setShowResult(true);
         return;
       }
 
@@ -72,6 +77,7 @@ function App() {
         throw new Error(data.message || "분석에 실패했습니다.");
       }
       setResult(data.result);
+      setShowResult(true);
     } catch (err) {
       console.error(err);
       alert("분석 실패");
@@ -82,6 +88,7 @@ function App() {
 
   const handleSelectHistory = (item) => {
     setResult(item.result);
+    setShowResult(true);
   };
 
   const handleReanalyze = (item) => {
@@ -92,32 +99,63 @@ function App() {
     });
   };
 
+  const handleReset = () => {
+    setResult(null);
+    setShowResult(false);
+  };
   return (
-    <div className="app-container">
-      <MotionHeader
-        className="header"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1>CodeXray</h1>
-        <p>코드를 한눈에 분석하는 AI 코드 인사이트 플랫폼</p>
-      </MotionHeader>
-
-      <main className="main-layout">
-        <div className="primary-column">
-          <CodeInput onAnalyze={handleAnalyze} />
+    <div className="app-shell">
+      <aside className={`history-drawer ${isHistoryOpen ? "open" : "closed"}`}>
+        <button
+          className="drawer-handle"
+          onClick={() => setIsHistoryOpen((prev) => !prev)}
+          aria-label={isHistoryOpen ? "히스토리 닫기" : "히스토리 열기"}
+        >
+          {isHistoryOpen ? "◀" : "▶"}
+        </button>
+        <div className="history-topbar">
+          <div>
+            <p className="eyebrow">히스토리</p>
+            <h2>최근 분석</h2>
+          </div>
+          <button
+            className="ghost-btn"
+            onClick={() => setIsHistoryOpen((prev) => !prev)}
+          >
+            {isHistoryOpen ? "닫기" : "열기"}
+          </button>
         </div>
-        <aside className="history-column">
-          <HistoryList
-            onSelect={handleSelectHistory}
-            onReanalyze={handleReanalyze}
-          />
-        </aside>
-      </main>
+        <HistoryList
+          onSelect={handleSelectHistory}
+          onReanalyze={handleReanalyze}
+        />
+      </aside>
 
-      <section className="result-section">
-        <ResultViewer result={result} />
-      </section>
+      <div className="content-area">
+        <MotionHeader
+          className="header"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div>
+            <h1>CodeXray</h1>
+            <p>코드를 한눈에 분석하는 AI 코드 인사이트 플랫폼</p>
+          </div>
+          <button
+            className="ghost-btn history-toggle"
+            onClick={() => setIsHistoryOpen((prev) => !prev)}
+          >
+            {isHistoryOpen ? "히스토리 숨기기" : "히스토리 보기"}
+          </button>
+        </MotionHeader>
+        <main className="workspace">
+          {!showResult ? (
+            <CodeInput onAnalyze={handleAnalyze} />
+          ) : (
+            <ResultViewer result={result} onReset={handleReset} />
+          )}
+        </main>
+      </div>
 
       {loading && <LoadingOverlay />}
     </div>

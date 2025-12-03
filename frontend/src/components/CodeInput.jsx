@@ -8,11 +8,18 @@ const optionPresets = [
   { key: "testing", label: "테스트 검토" },
 ];
 
+const inputModes = [
+  { key: "paste", label: "코드 붙여넣기" },
+  { key: "file", label: "파일 업로드" },
+  { key: "github", label: "GitHub 연동" },
+];
+
 export default function CodeInput({ onAnalyze }) {
   const [code, setCode] = useState("");
   const [file, setFile] = useState(null);
   const [repoUrl, setRepoUrl] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
+  const [inputMode, setInputMode] = useState("paste");
   const [options, setOptions] = useState({
     architecture: false,
     security: false,
@@ -24,73 +31,32 @@ export default function CodeInput({ onAnalyze }) {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const isDisabled = useMemo(
-    () => !repoUrl.trim() && !file && !code.trim(),
-    [repoUrl, file, code]
-  );
+  const isDisabled = useMemo(() => {
+    if (inputMode === "paste") return !code.trim();
+    if (inputMode === "file") return !file;
+    return !repoUrl.trim();
+  }, [inputMode, repoUrl, file, code]);
   const MotionPanel = motion.div;
 
   const handleSubmit = () => {
     if (isDisabled) {
-      alert("코드, 파일, 또는 GitHub 링크 중 하나를 입력해주세요.");
+      alert("선택한 입력 방식에 맞춰 필요한 값을 채워주세요.");
       return;
     }
 
     onAnalyze({ code, file, repoUrl, options, userPrompt });
   };
 
-  return (
-    <MotionPanel
-      className="panel input-panel"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-    >
-      <div className="panel-head">
-        <div>
-          <p className="eyebrow">입력</p>
-          <h2>코드 / 파일 / GitHub 분석</h2>
-          <p className="muted">
-            한 번의 클릭으로 원하는 분석 방식을 선택하세요.
-          </p>
-        </div>
-        <button
-          className="ghost-btn"
-          onClick={() =>
-            (window.location.href = "http://localhost:5000/api/github/login")
-          }
-        >
-          🔗 GitHub 계정 연동
-        </button>
-      </div>
-
-      <div className="input-group">
-        <label className="field-label">GitHub Repository URL (선택)</label>
-        <input
-          type="text"
-          className="text-field"
-          placeholder="https://github.com/user/repo"
-          value={repoUrl}
-          onChange={(e) => setRepoUrl(e.target.value)}
-        />
-      </div>
-
-      <div className="input-grid">
-        <div>
-          <label className="field-label">코드 붙여넣기</label>
-          <textarea
-            className="code-textarea"
-            placeholder="분석할 코드를 붙여넣으세요"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-        </div>
-
-        <div className="upload-card">
-          <label className="field-label">파일 업로드</label>
-          <div className="upload-box">
-            <p className="muted">.js .ts .jsx .tsx .json .txt 파일 지원</p>
-            <label className="upload-btn">
-              📁 파일 선택
+  const renderModeContent = () => {
+    switch (inputMode) {
+      case "file":
+        return (
+          <div className="upload-area">
+            <p className="muted">
+              .js .ts .jsx .tsx .json .txt 파일을 업로드하면 분석이 진행됩니다.
+            </p>
+            <label className="upload-btn large">
+              파일 선택
               <input
                 type="file"
                 accept=".js,.ts,.jsx,.tsx,.json,.txt"
@@ -99,8 +65,79 @@ export default function CodeInput({ onAnalyze }) {
             </label>
             {file && <p className="file-name">첨부됨: {file.name}</p>}
           </div>
+        );
+      case "github":
+        return (
+          <div className="input-group">
+            <label className="field-label">GitHub Repository URL</label>
+            <input
+              type="text"
+              className="text-field"
+              placeholder="https://github.com/user/repo"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+            />
+            <div className="helper-inline">
+              <button
+                className="ghost-btn"
+                type="button"
+                onClick={() =>
+                  (window.location.href =
+                    "http://localhost:5000/api/github/login")
+                }
+              >
+                계정 연동하기
+              </button>
+              <span className="muted">
+                연동 없이 공개 저장소도 URL만으로 분석할 수 있습니다.
+              </span>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="input-group">
+            <label className="field-label">코드 붙여넣기</label>
+            <textarea
+              className="code-textarea tall"
+              placeholder="분석할 코드를 붙여넣으세요"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <MotionPanel
+      className="panel input-panel"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="panel-head">
+        <div>
+          <p className="eyebrow">입력</p>
+          <h2>분석할 코드를 준비하세요</h2>
+          <p className="muted">
+            필요한 입력 방식을 선택하면 영역이 전환됩니다.
+          </p>
         </div>
       </div>
+
+      <div className="input-mode-tabs">
+        {inputModes.map((mode) => (
+          <button
+            key={mode.key}
+            className={`mode-tab ${inputMode === mode.key ? "active" : ""}`}
+            onClick={() => setInputMode(mode.key)}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mode-surface">{renderModeContent()}</div>
 
       <div className="option-grid">
         {optionPresets.map((opt) => (
@@ -128,7 +165,9 @@ export default function CodeInput({ onAnalyze }) {
       <div className="action-row">
         <div className="helper-text">
           <span className="dot" />
-          붙여넣기, 파일 업로드, GitHub 주소 중 하나만 입력해도 됩니다.
+          {inputMode === "paste" && "붙여넣은 코드로 즉시 분석합니다."}
+          {inputMode === "file" && "선택한 파일을 업로드하여 분석합니다."}
+          {inputMode === "github" && "레포지토리 URL을 기반으로 분석합니다."}
         </div>
         <button
           className="analyze-btn"
