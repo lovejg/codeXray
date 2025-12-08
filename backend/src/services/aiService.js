@@ -2,12 +2,9 @@ import OpenAI from "openai";
 import axios from "axios";
 
 const DEFAULT_MODELS = {
-  openai: process.env.OPENAI_MODEL || "gpt-4o-mini",
-  gemini: process.env.GEMINI_MODEL || "gemini-2.0-flash",
-  claude:
-    process.env.ANTHROPIC_MODEL ||
-    process.env.CLAUDE_MODEL ||
-    "claude-3-haiku-20240307",
+  openai: "gpt-4o-mini",
+  gemini: "gemini-2.0-flash",
+  claude: "claude-3-haiku-20240307",
 };
 
 function getEnvKey(key, provider) {
@@ -69,6 +66,12 @@ async function runGemini(prompt, model) {
 
 async function runClaude(prompt, model) {
   const apiKey = getEnvKey("ANTHROPIC_API_KEY", "Claude");
+
+  console.log(
+    "Using Claude Key:",
+    apiKey ? apiKey.slice(0, 10) + "..." : "No Key"
+  );
+  console.log("Requesting Model:", model);
 
   try {
     const response = await axios.post(
