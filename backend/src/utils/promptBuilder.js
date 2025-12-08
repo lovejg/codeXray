@@ -34,8 +34,6 @@ export function generatePrompt(
     architecture: "- 아키텍처 패턴과 의존성 구조를 설명해주세요.",
     security: "- 잠재적인 보안 취약점과 개선 방안을 지적해주세요.",
     performance: "- 성능 최적화 가능 영역과 개선 사항을 제안해주세요.",
-    complexity: "- 코드 복잡도 분석 및 리팩토링 기회를 찾아주세요.",
-    errors: "- 잠재적인 버그나 런타임 에러 가능성을 분석해주세요.",
     testing: "- 테스트 누락을 찾아 우선순위별 테스트 케이스를 제안해주세요.",
     style: "- 코드 스타일/린트 문제를 지적하고 자동 수정 예시를 제안해주세요.",
     dependencies:

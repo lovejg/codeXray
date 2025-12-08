@@ -1,13 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
-const optionPresets = [
-  { key: "architecture", label: "아키텍처 분석" },
-  { key: "security", label: "보안 점검" },
-  { key: "performance", label: "성능 개선" },
-  { key: "testing", label: "테스트 검토" },
-];
-
 const inputModes = [
   { key: "paste", label: "코드 붙여넣기" },
   { key: "file", label: "파일 업로드" },
@@ -145,7 +138,6 @@ export default function CodeInput({ onAnalyze }) {
 
       <div className="mode-surface">{renderModeContent()}</div>
 
-      <div className="option-grid">
       <div className="option-grid three-columns">
         {[
           { key: "architecture", label: "아키텍처 분석" },
