@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import CodeInput from "./components/CodeInput.jsx";
 import ResultViewer from "./components/ResultViewer.jsx";
 import LoadingOverlay from "./components/LoadingOverlay.jsx";
 import HistoryList from "./components/HistoryList.jsx";
+import { API_BASE } from "./config.js";
 import "./App.css";
 
 function App() {
@@ -13,11 +14,6 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const toggleHistory = () => setIsHistoryOpen((prev) => !prev);
   const MotionHeader = motion.header;
-
-  const API_BASE = useMemo(
-    () => import.meta.env.VITE_API_BASE || "http://localhost:5000",
-    []
-  );
 
   const handleAnalyze = async (payload) => {
     setLoading(true);

@@ -9,16 +9,17 @@ export function generatePrompt(code, options = {}, userPrompt = "") {
 `;
 
   // 사용자 옵션 선택에 따른 프롬프트 추가
-  let optionPrompt = "\n[추가 분석 요청]\n";
+  const optionMap = {
+    architecture: "- 아키텍처 및 의존성 구조를 설명해주세요.",
+    security: "- 잠재적인 보안 취약점을 지적해주세요.",
+    performance: "- 성능 개선 방법을 제안해주세요.",
+    testing: "- 테스트 누락 및 개선 제안을 해주세요.",
+  };
 
-  if (options?.architecture)
-    optionPrompt += "- 아키텍처 및 의존성 구조를 설명해주세요.\n";
-  if (options?.security)
-    optionPrompt += "- 잠재적인 보안 취약점을 지적해주세요.\n";
-  if (options?.performance)
-    optionPrompt += "- 성능 개선 방법을 제안해주세요.\n";
-  if (options?.testing)
-    optionPrompt += "- 테스트 누락 및 개선 제안을 해주세요.\n";
+  let optionPrompt = "\n[추가 분석 요청]\n";
+  Object.entries(optionMap).forEach(([key, text]) => {
+    if (options?.[key]) optionPrompt += `${text}\n`;
+  });
 
   // 사용자 커스텀 프롬프트 추가
   let userPromptBlock = "";

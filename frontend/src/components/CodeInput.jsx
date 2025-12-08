@@ -103,6 +103,10 @@ export default function CodeInput({ onAnalyze }) {
               placeholder="분석할 코드를 붙여넣으세요"
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
             />
           </div>
         );
