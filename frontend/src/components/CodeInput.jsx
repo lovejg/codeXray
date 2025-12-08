@@ -25,6 +25,8 @@ export default function CodeInput({ onAnalyze }) {
     security: false,
     performance: false,
     testing: false,
+    style: false,
+    dependencies: false,
   });
 
   const toggleOption = (key) => {
@@ -144,14 +146,22 @@ export default function CodeInput({ onAnalyze }) {
       <div className="mode-surface">{renderModeContent()}</div>
 
       <div className="option-grid">
-        {optionPresets.map((opt) => (
+      <div className="option-grid three-columns">
+        {[
+          { key: "architecture", label: "아키텍처 분석" },
+          { key: "security", label: "보안 점검" },
+          { key: "performance", label: "성능 개선" },
+          { key: "testing", label: "테스트 검토" },
+          { key: "style", label: "스타일/린트" },
+          { key: "dependencies", label: "의존성/업데이트" },
+        ].map((opt) => (
           <label key={opt.key} className="option-item">
             <input
               type="checkbox"
-              checked={options[opt.key]}
+              checked={!!options[opt.key]}
               onChange={() => toggleOption(opt.key)}
             />
-            <span>{opt.label}</span>
+            {opt.label}
           </label>
         ))}
       </div>

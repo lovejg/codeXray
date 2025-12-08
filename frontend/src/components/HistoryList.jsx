@@ -44,14 +44,35 @@ export default function HistoryList({ onSelect, onReanalyze }) {
     []
   );
 
-  const loadHistory = useCallback(() => {
-    fetch(`${API_BASE}/api/history`)
-      .then((res) => res.json())
-      .then((data) => setHistory(data));
-  }, [API_BASE]);
+  const loadHistory = useCallback(
+    async (signal) => {
+      try {
+        const response = await fetch(`${API_BASE}/api/history`, { signal });
+        const data = await response.json();
+        setHistory(data);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        console.error("히스토리를 불러오지 못했습니다.", error);
+      }
+    },
+    [API_BASE]
+  );
 
   useEffect(() => {
-    loadHistory();
+    const controller = new AbortController();
+    let timeoutId;
+
+    const tick = async () => {
+      await loadHistory(controller.signal);
+      timeoutId = window.setTimeout(tick, 1000);
+    };
+
+    tick();
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [loadHistory]);
 
   const handleDelete = async (id) => {
@@ -73,9 +94,6 @@ export default function HistoryList({ onSelect, onReanalyze }) {
           <p className="muted">최근 분석 기록</p>
           <h3>이전 결과를 다시 확인하세요</h3>
         </div>
-        <button className="ghost-btn" onClick={loadHistory}>
-          새로고침
-        </button>
       </div>
       {history.length === 0 && (
         <div className="empty-state">

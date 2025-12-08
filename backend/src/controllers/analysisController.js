@@ -3,6 +3,22 @@ import { analyzeWithOpenAI } from "../services/aiService.js";
 import { fetchGithubRepo } from "../utils/githubFetcher.js";
 import Analysis from "../models/Analysis.js";
 
+function chunkTextBySize(text, maxSize = 15000) {
+  const lines = text.split("\n");
+  const chunks = [];
+  let cur = "";
+  for (const line of lines) {
+    if ((cur + "\n" + line).length > maxSize) {
+      if (cur.length > 0) chunks.push(cur);
+      cur = line;
+    } else {
+      cur = cur.length === 0 ? line : cur + "\n" + line;
+    }
+  }
+  if (cur.length > 0) chunks.push(cur);
+  return chunks;
+}
+
 export const analyzeCode = async (req, res) => {
   try {
     const { code, options, userPrompt } = req.body; // 프론트에서 받음
@@ -11,7 +27,21 @@ export const analyzeCode = async (req, res) => {
       return res.status(400).json({ message: "코드가 없음" });
     }
 
-    const finalPrompt = generatePrompt(code, options, userPrompt); // 최종 프롬프트 생성
+    // If input is large, summarize chunks first to stay within token limits
+    let finalInput = code;
+    if (code.length > 15000) {
+      const chunks = chunkTextBySize(code, 12000);
+      const summaries = [];
+      for (const chunk of chunks) {
+        const prompt = generatePrompt(chunk, options, userPrompt, "summarize");
+        const s = await analyzeWithOpenAI(prompt);
+        summaries.push(s);
+      }
+      // combine summaries for final analysis
+      finalInput = summaries.join("\n\n---SUMMARY---\n\n");
+    }
+
+    const finalPrompt = generatePrompt(finalInput, options, userPrompt); // 최종 프롬프트 생성
 
     const result = await analyzeWithOpenAI(finalPrompt); // 최종 프롬프트 AI에 넣고 답변 받기
 
@@ -45,7 +75,24 @@ export const analyzeFile = async (req, res) => {
         ? JSON.parse(options)
         : options;
 
-    const finalPrompt = generatePrompt(fileContent, parsedOptions, userPrompt); // 최종 프롬프트 생성
+    let finalInput = fileContent;
+    if (fileContent.length > 15000) {
+      const chunks = chunkTextBySize(fileContent, 12000);
+      const summaries = [];
+      for (const chunk of chunks) {
+        const prompt = generatePrompt(
+          chunk,
+          parsedOptions,
+          userPrompt,
+          "summarize"
+        );
+        const s = await analyzeWithOpenAI(prompt);
+        summaries.push(s);
+      }
+      finalInput = summaries.join("\n\n---SUMMARY---\n\n");
+    }
+
+    const finalPrompt = generatePrompt(finalInput, parsedOptions, userPrompt); // 최종 프롬프트 생성
     const result = await analyzeWithOpenAI(finalPrompt); // 최종 프롬프트 AI에 넣고 답변 받기
     const analysis = new Analysis({
       code: fileContent,
@@ -82,7 +129,19 @@ export const analyzeGithub = async (req, res) => {
     const { repoUrl, options, userPrompt } = req.body;
 
     const code = await fetchGithubRepo(repoUrl); // 깃허브 레포에서 코드 가져오기
-    const finalPrompt = generatePrompt(code, options, userPrompt); // 최종 프롬프트 생성
+    let finalInput = code;
+    if (code.length > 15000) {
+      const chunks = chunkTextBySize(code, 12000);
+      const summaries = [];
+      for (const chunk of chunks) {
+        const prompt = generatePrompt(chunk, options, userPrompt, "summarize");
+        const s = await analyzeWithOpenAI(prompt);
+        summaries.push(s);
+      }
+      finalInput = summaries.join("\n\n---SUMMARY---\n\n");
+    }
+
+    const finalPrompt = generatePrompt(finalInput, options, userPrompt); // 최종 프롬프트 생성
     const result = await analyzeWithOpenAI(finalPrompt); // 최종 프롬프트 AI에 넣고 답변 받기
 
     const analysis = new Analysis({

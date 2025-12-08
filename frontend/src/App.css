@@ -337,6 +337,10 @@ body {
   margin: 12px 0 10px;
 }
 
+.option-grid.three-columns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .option-item {
   display: flex;
   align-items: center;
