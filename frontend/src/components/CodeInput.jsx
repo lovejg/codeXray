@@ -7,12 +7,27 @@ const inputModes = [
   { key: "github", label: "GitHub 연동" },
 ];
 
+const modelOptions = [
+  { provider: "openai", model: "gpt-4o-mini", label: "OpenAI · GPT-4o-mini" },
+  {
+    provider: "gemini",
+    model: "gemini-2.0-flash",
+    label: "Gemini · 2.0 Flash",
+  },
+  {
+    provider: "claude",
+    model: "claude-3-5-sonnet-20240620",
+    label: "Claude · 3.5 Sonnet",
+  },
+];
+
 export default function CodeInput({ onAnalyze }) {
   const [code, setCode] = useState("");
   const [file, setFile] = useState(null);
   const [repoUrl, setRepoUrl] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
   const [inputMode, setInputMode] = useState("paste");
+  const [model, setModel] = useState(modelOptions[0]);
   const [options, setOptions] = useState({
     architecture: false,
     security: false,
@@ -39,7 +54,7 @@ export default function CodeInput({ onAnalyze }) {
       return;
     }
 
-    onAnalyze({ code, file, repoUrl, options, userPrompt });
+    onAnalyze({ code, file, repoUrl, options, userPrompt, model });
   };
 
   const renderModeContent = () => {
@@ -108,6 +123,13 @@ export default function CodeInput({ onAnalyze }) {
     }
   };
 
+  const handleModelChange = (event) => {
+    const nextModel = modelOptions.find(
+      (option) => option.provider === event.target.value
+    );
+    setModel(nextModel || modelOptions[0]);
+  };
+
   return (
     <MotionPanel
       className="panel input-panel"
@@ -122,6 +144,24 @@ export default function CodeInput({ onAnalyze }) {
             필요한 입력 방식을 선택하면 영역이 전환됩니다.
           </p>
         </div>
+      </div>
+
+      <div className="input-group">
+        <label className="field-label">사용할 AI 모델</label>
+        <select
+          className="text-field"
+          value={model.provider}
+          onChange={handleModelChange}
+        >
+          {modelOptions.map((option) => (
+            <option key={option.provider} value={option.provider}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <p className="muted">
+          OpenAI, Gemini, Claude 중 원하는 엔진을 선택하세요!
+        </p>
       </div>
 
       <div className="input-mode-tabs">

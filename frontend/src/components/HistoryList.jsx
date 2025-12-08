@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+const providerLabels = {
+  openai: "OpenAI",
+  gemini: "Gemini",
+  claude: "Claude",
+};
+
 const extractKeywords = (text) => {
   const tokens =
     text
@@ -105,6 +111,7 @@ export default function HistoryList({ onSelect, onReanalyze }) {
         {history.map((item) => {
           const keywords = extractKeywords(item.code || item.userPrompt || "");
           const headline = buildHeadline(item);
+          const modelLabel = providerLabels[item.model?.provider] || "OpenAI";
 
           return (
             <div key={item._id} className="history-item">
@@ -113,6 +120,7 @@ export default function HistoryList({ onSelect, onReanalyze }) {
                   {new Date(item.createdAt).toLocaleString()}
                 </div>
                 <div className="history-headline">{headline}</div>
+                <div className="muted history-model">{modelLabel}</div>
                 {keywords.length > 0 && (
                   <div className="history-keywords">
                     {keywords.map((word) => (

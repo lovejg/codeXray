@@ -17,6 +17,7 @@ const analyzeGithub = (payload) =>
       repoUrl: payload.repoUrl,
       options: payload.options,
       userPrompt: payload.userPrompt,
+      model: payload.model,
     }),
   }).then((res) => parseResponse(res, "GitHub 분석에 실패했습니다."));
 
@@ -25,6 +26,7 @@ const analyzeFile = (payload) => {
   formData.append("file", payload.file);
   formData.append("options", JSON.stringify(payload.options || {}));
   formData.append("userPrompt", payload.userPrompt || "");
+  formData.append("model", JSON.stringify(payload.model || {}));
 
   return fetch(`${API_BASE}/api/analyze/file`, {
     method: "POST",
@@ -42,6 +44,7 @@ const analyzeCode = (payload) =>
       code: payload.code,
       options: payload.options,
       userPrompt: payload.userPrompt,
+      model: payload.model,
     }),
   }).then((res) => parseResponse(res, "분석에 실패했습니다."));
 
@@ -66,7 +69,7 @@ export default function useAnalysis() {
       setShowResult(true);
     } catch (err) {
       console.error(err);
-      alert("분석 실패");
+      alert(err.message || "분석 실패");
     } finally {
       setLoading(false);
     }
@@ -83,6 +86,7 @@ export default function useAnalysis() {
         code: item.code,
         options: item.options,
         userPrompt: item.userPrompt,
+        model: item.model,
       });
     },
     [handleAnalyze]

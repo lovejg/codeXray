@@ -51,13 +51,10 @@ export function generatePrompt(
     userPromptBlock = `\n[사용자 추가 요청]\n${userPrompt}\n`;
   }
 
-  // Mode-specific instructions
   if (mode === "summarize") {
-    // Short, concise summary for chunking stage
     return `당신은 코드 요약 전문가입니다. 아래 코드를 짧고 간결하게 요약해주세요. 주요 목적, 사용된 기술, 핵심 함수/모듈, 발견된 문제(있다면 한두 문장)만 포함하세요. 출력은 일반 텍스트로 간결하게 작성하세요.\n\n[코드]\n${code}`;
   }
 
-  // For full analysis, request both human-readable markdown and a machine-readable JSON
   const jsonSchemaInstruction = `\n[출력 형식 요구사항]\n1) 먼저 마크다운 형태의 보고서를 제공합니다 (Short Summary, Tech Stack, Key Functionality, File Roles, Key Logic, Issues & Recommendations, Next Steps).\n2) 그 다음 줄부터는 정확한 JSON 객체만 출력하세요. JSON 스키마는 다음을 포함해야 합니다 (필수): {"summary":"short text","techStack":[],"files":[],"issues":[],"recommendations":[]} 각 issue 항목은 {"id","type","severity","location":{"file","line"},"description","suggestedFix","patch"} 형태로 작성하세요. JSON 외의 추가 텍스트는 포함하지 마세요.`;
 
   return `${basePrompt}${optionPrompt}${userPromptBlock}${jsonSchemaInstruction}\n[코드]\n${code}`;
