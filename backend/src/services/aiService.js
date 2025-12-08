@@ -2,9 +2,12 @@ import OpenAI from "openai";
 import axios from "axios";
 
 const DEFAULT_MODELS = {
-  openai: "gpt-4o-mini",
-  gemini: "gemini-2.0-flash",
-  claude: "claude-3-5-sonnet-20240620",
+  openai: process.env.OPENAI_MODEL || "gpt-4o-mini",
+  gemini: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+  claude:
+    process.env.ANTHROPIC_MODEL ||
+    process.env.CLAUDE_MODEL ||
+    "claude-3-haiku-20240307",
 };
 
 function getEnvKey(key, provider) {
@@ -95,8 +98,23 @@ async function runClaude(prompt, model) {
     // Provide a clearer message for 404 (model not found)
     if (status === 404) {
       const body = JSON.stringify(respData).slice(0, 1000);
+      const fallback =
+        (process.env.ANTHROPIC_FALLBACK_OPENAI || "false").toLowerCase() ===
+        "true";
+      if (fallback) {
+        console.warn(
+          `Claude model not found (${model}) - falling back to OpenAI as ANTHROPIC_FALLBACK_OPENAI=true`
+        );
+        try {
+          return await runOpenAI(prompt, DEFAULT_MODELS.openai);
+        } catch (e) {
+          console.error("Fallback to OpenAI failed:", e);
+          // continue to throw the original helpful error below
+        }
+      }
+
       throw new Error(
-        `Claude 모델을 찾을 수 없습니다: ${model} (HTTP 404). 확인하세요: 모델 이름이 정확한지, Anthropic 계정에서 해당 모델에 대한 접근 권한이 있는지. 응답 요약: ${body}`
+        `Claude 모델을 찾을 수 없습니다: ${model} (HTTP 404). 확인하세요: 모델 이름이 정확한지, Anthropic 계정에서 해당 모델에 대한 접근 권한이 있는지. 필요한 경우 ANTHROPIC_MODEL (또는 CLAUDE_MODEL) 환경 변수를 사용해 계정에서 접근 가능한 모델 이름을 설정하세요. 응답 요약: ${body}`
       );
     }
 
