@@ -141,10 +141,10 @@ export const deleteHistory = async (req, res) => {
 
 export const analyzeGithub = async (req, res) => {
   try {
-    const { repoUrl, options, userPrompt, model } = req.body;
+    const { repoUrl, options, userPrompt, model, githubToken } = req.body;
     const selectedModel = parseJsonIfNeeded(model) || {};
 
-    const code = await fetchGithubRepo(repoUrl); // 깃허브 레포에서 코드 가져오기
+    const code = await fetchGithubRepo(repoUrl, githubToken); // 깃허브 레포에서 코드 가져오기
     let finalInput = code;
     if (code.length > 15000) {
       const chunks = chunkTextBySize(code, 12000);
@@ -171,8 +171,9 @@ export const analyzeGithub = async (req, res) => {
 
     res.json({ success: true, result });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "GitHub 분석 중 오류 발생" });
+    res.status(500).json({
+      success: false,
+      message: error.message || "GitHub 분석 중 오류 발생",
+    });
   }
 };

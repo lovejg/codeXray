@@ -32,11 +32,14 @@ export default function CodeInput({ onAnalyze }) {
   const [code, setCode] = useState("");
   const [file, setFile] = useState(null);
   const [repoUrl, setRepoUrl] = useState("");
+  const [githubToken, setGithubToken] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("token") || "";
+  });
   const [userPrompt, setUserPrompt] = useState("");
   const [inputMode, setInputMode] = useState("paste");
   const initialModel =
     modelOptions.find((m) => m.provider === defaultProvider) || modelOptions[0];
-  // ensure initial model reflects defaultModel override if provided
   if (initialModel && defaultModel) initialModel.model = defaultModel;
   const [model, setModel] = useState(initialModel);
   const [options, setOptions] = useState({
@@ -65,7 +68,15 @@ export default function CodeInput({ onAnalyze }) {
       return;
     }
 
-    onAnalyze({ code, file, repoUrl, options, userPrompt, model });
+    onAnalyze({
+      code,
+      file,
+      repoUrl,
+      options,
+      userPrompt,
+      model,
+      githubToken: githubToken?.trim() || undefined,
+    });
   };
 
   const renderModeContent = () => {
@@ -97,6 +108,16 @@ export default function CodeInput({ onAnalyze }) {
               placeholder="https://github.com/user/repo"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
+            />
+            <label className="field-label" style={{ marginTop: "12px" }}>
+              GitHub Access Token (옵션)
+            </label>
+            <input
+              type="password"
+              className="text-field"
+              placeholder="비공개 저장소면 토큰을 입력하세요"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
             />
             <div className="helper-inline">
               <button

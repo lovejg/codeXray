@@ -18,6 +18,7 @@ const analyzeGithub = (payload) =>
       options: payload.options,
       userPrompt: payload.userPrompt,
       model: payload.model,
+      githubToken: payload.githubToken,
     }),
   }).then((res) => parseResponse(res, "GitHub 분석에 실패했습니다."));
 
