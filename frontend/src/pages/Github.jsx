@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../config.js";
+import LoadingOverlay from "../components/LoadingOverlay.jsx";
 
 const getTokenFromQuery = () =>
   typeof window === "undefined"
@@ -9,7 +10,12 @@ const getTokenFromQuery = () =>
 export default function Github() {
   const [repos, setRepos] = useState([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState({
+    active: false,
+    message: "",
+    subMessage: "",
+    progressLabel: "",
+  });
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [disconnectFeedback, setDisconnectFeedback] = useState({
@@ -28,6 +34,7 @@ export default function Github() {
 
   const normalizedToken = useMemo(() => token.trim(), [token]);
   const loginUrl = `${API_BASE}/api/github/login`;
+  const loading = loadingState.active;
 
   const resetDisconnectFeedback = () =>
     setDisconnectFeedback({ type: "", message: "", nextAction: "" });
@@ -39,7 +46,12 @@ export default function Github() {
       return;
     }
 
-    setLoading(true);
+    setLoadingState({
+      active: true,
+      message: "저장소 목록 불러오는 중",
+      subMessage: "GitHub에서 최신 데이터를 가져오고 있어요...",
+      progressLabel: "목록 동기화 중",
+    });
     setError("");
 
     try {
@@ -57,7 +69,7 @@ export default function Github() {
       setError(err.message || "저장소 목록을 불러오지 못했습니다.");
       setRepos([]);
     } finally {
-      setLoading(false);
+      setLoadingState((prev) => ({ ...prev, active: false }));
     }
   }, [normalizedToken]);
 
@@ -70,7 +82,12 @@ export default function Github() {
   }, [fetchRepos, normalizedToken]);
 
   const analyzeRepo = async (repoUrl) => {
-    setLoading(true);
+    setLoadingState({
+      active: true,
+      message: "저장소 분석을 시작했어요",
+      subMessage: "코드를 내려받고 분석 파이프라인을 준비 중입니다.",
+      progressLabel: "분석 준비 중...",
+    });
     setError("");
 
     try {
@@ -88,12 +105,12 @@ export default function Github() {
         throw new Error(data.message || "분석 요청이 실패했습니다.");
       }
 
-      localStorage.setItem("analysisResult", data.result);
+      localStorage.setItem("analysisResult", JSON.stringify(data.result || ""));
       window.location.assign("/");
     } catch (err) {
       setError(err.message || "분석 중 오류가 발생했습니다.");
     } finally {
-      setLoading(false);
+      setLoadingState((prev) => ({ ...prev, active: false }));
     }
   };
 
@@ -303,6 +320,17 @@ export default function Github() {
             </div>
           </div>
         </div>
+      )}
+
+      {loadingState.active && (
+        <LoadingOverlay
+          message={loadingState.message || "분석 중이에요"}
+          subMessage={
+            loadingState.subMessage || "코드를 읽고 인사이트를 준비하는 중..."
+          }
+          showProgressBar={Boolean(loadingState.progressLabel)}
+          progressLabel={loadingState.progressLabel}
+        />
       )}
     </div>
   );

@@ -209,7 +209,14 @@ export default function CodeInput({ onAnalyze }) {
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
             </label>
-            {file && <p className="file-name">첨부됨: {file.name}</p>}
+            {file && (
+              <p
+                className="file-name"
+                style={{ fontSize: "16px", fontWeight: "600" }}
+              >
+                첨부됨: {file.name}
+              </p>
+            )}
           </div>
         );
       case "github":

@@ -895,9 +895,59 @@ body {
   font-size: 14px;
 }
 
+.loader-progress {
+  margin-top: 4px;
+  padding-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.loader-progress-bar {
+  position: relative;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.loader-progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(56, 189, 248, 0.9),
+    rgba(34, 211, 238, 0.9),
+    rgba(74, 222, 128, 0.9)
+  );
+  width: 55%;
+  border-radius: 999px;
+  animation: progressSweep 1.4s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.45);
+}
+
+.loader-progress-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: -0.01em;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes progressSweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  50% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(110%);
   }
 }
 

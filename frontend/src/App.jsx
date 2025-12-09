@@ -13,7 +13,7 @@ function App() {
 
   const {
     result,
-    loading,
+    loadingState,
     showResult,
     handleAnalyze,
     handleSelectHistory,
@@ -58,7 +58,18 @@ function App() {
         </button>
       )}
 
-      {loading && <LoadingOverlay />}
+      {loadingState?.active && (
+        <LoadingOverlay
+          message={loadingState.message || "분석 중이에요"}
+          subMessage={
+            loadingState.subMessage || "코드를 읽고 인사이트를 준비하는 중..."
+          }
+          showProgressBar
+          progressLabel={
+            loadingState.progressLabel || "분석 파이프라인을 준비하고 있어요"
+          }
+        />
+      )}
     </div>
   );
 }
