@@ -7,17 +7,24 @@ const inputModes = [
   { key: "github", label: "GitHub 연동" },
 ];
 
+const defaultProvider = "openai";
+const defaultModel = import.meta.env.VITE_OPENAI_MODEL;
+
 const modelOptions = [
-  { provider: "openai", model: "gpt-4o-mini", label: "OpenAI · GPT-4o-mini" },
+  {
+    provider: "openai",
+    model: import.meta.env.VITE_OPENAI_MODEL,
+    label: `OpenAI · ${import.meta.env.VITE_OPENAI_MODEL}`,
+  },
   {
     provider: "gemini",
-    model: "gemini-2.0-flash",
-    label: "Gemini · 2.0 Flash",
+    model: import.meta.env.VITE_GEMINI_MODEL,
+    label: `Gemini · ${import.meta.env.VITE_GEMINI_MODEL}`,
   },
   {
     provider: "claude",
-    model: "claude-3-haiku-20240307",
-    label: "Claude · 3 Opus",
+    model: import.meta.env.VITE_CLAUDE_MODEL,
+    label: `Claude · ${import.meta.env.VITE_CLAUDE_MODEL}`,
   },
 ];
 
@@ -27,7 +34,11 @@ export default function CodeInput({ onAnalyze }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
   const [inputMode, setInputMode] = useState("paste");
-  const [model, setModel] = useState(modelOptions[0]);
+  const initialModel =
+    modelOptions.find((m) => m.provider === defaultProvider) || modelOptions[0];
+  // ensure initial model reflects defaultModel override if provided
+  if (initialModel && defaultModel) initialModel.model = defaultModel;
+  const [model, setModel] = useState(initialModel);
   const [options, setOptions] = useState({
     architecture: false,
     security: false,

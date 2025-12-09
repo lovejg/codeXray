@@ -2,9 +2,9 @@ import OpenAI from "openai";
 import axios from "axios";
 
 const DEFAULT_MODELS = {
-  openai: "gpt-4o-mini",
-  gemini: "gemini-2.0-flash",
-  claude: "claude-3-haiku-20240307",
+  openai: process.env.OPENAI_MODEL,
+  gemini: process.env.GEMINI_MODEL,
+  claude: process.env.CLAUDE_MODEL,
 };
 
 function getEnvKey(key, provider) {
