@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { API_BASE } from "../config";
 
 const inputModes = [
   { key: "paste", label: "코드 붙여넣기" },
@@ -34,7 +35,9 @@ export default function CodeInput({ onAnalyze }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [githubToken, setGithubToken] = useState(() => {
     if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("token") || "";
+    const fromQuery = new URLSearchParams(window.location.search).get("token");
+    if (fromQuery) return fromQuery;
+    return localStorage.getItem("githubAccessToken") || "";
   });
   const [userPrompt, setUserPrompt] = useState("");
   const [inputMode, setInputMode] = useState("paste");
@@ -50,6 +53,9 @@ export default function CodeInput({ onAnalyze }) {
     style: false,
     dependencies: false,
   });
+  const [repoOptions, setRepoOptions] = useState([]);
+  const [repoError, setRepoError] = useState("");
+  const [repoLoading, setRepoLoading] = useState(false);
 
   const toggleOption = (key) => {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -61,6 +67,51 @@ export default function CodeInput({ onAnalyze }) {
     return !repoUrl.trim();
   }, [inputMode, repoUrl, file, code]);
   const MotionPanel = motion.div;
+
+  const normalizedGithubToken = useMemo(
+    () => githubToken.trim(),
+    [githubToken]
+  );
+
+  useEffect(() => {
+    if (!normalizedGithubToken) {
+      setRepoOptions([]);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("githubAccessToken");
+      }
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("githubAccessToken", normalizedGithubToken);
+    }
+
+    const fetchRepos = async () => {
+      setRepoLoading(true);
+      setRepoError("");
+
+      try {
+        const response = await fetch(`${API_BASE}/api/github/repos`, {
+          headers: { Authorization: `Bearer ${normalizedGithubToken}` },
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "저장소 목록을 불러오지 못했습니다.");
+        }
+
+        const data = await response.json();
+        setRepoOptions(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setRepoOptions([]);
+        setRepoError(err.message || "저장소 목록을 불러오지 못했습니다.");
+      } finally {
+        setRepoLoading(false);
+      }
+    };
+
+    fetchRepos();
+  }, [normalizedGithubToken]);
 
   const handleSubmit = () => {
     if (isDisabled) {
@@ -75,7 +126,7 @@ export default function CodeInput({ onAnalyze }) {
       options,
       userPrompt,
       model,
-      githubToken: githubToken?.trim() || undefined,
+      githubToken: normalizedGithubToken || undefined,
     });
   };
 
@@ -109,6 +160,26 @@ export default function CodeInput({ onAnalyze }) {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
             />
+            {repoOptions.length > 0 && (
+              <div className="input-group" style={{ marginTop: "12px" }}>
+                <label className="field-label">내 저장소 선택</label>
+                <select
+                  className="text-field"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                >
+                  <option value="">저장소를 선택하세요</option>
+                  {repoOptions.map((repo) => (
+                    <option key={repo.id} value={repo.html_url}>
+                      {repo.full_name}
+                    </option>
+                  ))}
+                </select>
+                <p className="muted">
+                  GitHub 계정으로 연동된 저장소를 바로 선택할 수 있습니다.
+                </p>
+              </div>
+            )}
             <label className="field-label" style={{ marginTop: "12px" }}>
               GitHub Access Token (옵션)
             </label>
@@ -133,6 +204,14 @@ export default function CodeInput({ onAnalyze }) {
               <span className="muted">
                 연동 없이 공개 저장소도 URL만으로 분석할 수 있습니다.
               </span>
+              {repoLoading && (
+                <span className="muted"> · 저장소 불러오는 중...</span>
+              )}
+              {repoError && (
+                <span className="muted" style={{ color: "#b00020" }}>
+                  · {repoError}
+                </span>
+              )}
             </div>
           </div>
         );
