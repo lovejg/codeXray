@@ -56,9 +56,20 @@ export default function CodeInput({ onAnalyze }) {
   const [repoOptions, setRepoOptions] = useState([]);
   const [repoError, setRepoError] = useState("");
   const [repoLoading, setRepoLoading] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectFeedback, setDisconnectFeedback] = useState({
+    type: "",
+    message: "",
+    nextAction: "",
+  });
 
   const toggleOption = (key) => {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const resetDisconnectFeedback = () => {
+    setDisconnectFeedback({ type: "", message: "", nextAction: "" });
   };
 
   const isDisabled = useMemo(() => {
@@ -79,6 +90,7 @@ export default function CodeInput({ onAnalyze }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("githubAccessToken");
       }
+      resetDisconnectFeedback();
       return;
     }
 
@@ -113,6 +125,49 @@ export default function CodeInput({ onAnalyze }) {
     fetchRepos();
   }, [normalizedGithubToken]);
 
+  const handleDisconnect = async () => {
+    if (!normalizedGithubToken) return;
+
+    setDisconnecting(true);
+    setRepoError("");
+    resetDisconnectFeedback();
+
+    try {
+      const response = await fetch(`${API_BASE}/api/github/integration`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${normalizedGithubToken}` },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          data.message || "연동 해제에 실패했습니다. 잠시 후 다시 시도해주세요."
+        );
+      }
+
+      setGithubToken("");
+      setRepoUrl("");
+      setRepoOptions([]);
+      setDisconnectFeedback({
+        type: "success",
+        message: data.message || "GitHub 연동이 해제되었습니다.",
+        nextAction:
+          data.nextAction ||
+          "홈 화면에서 '계정 연동하기' 버튼으로 다시 로그인하세요.",
+      });
+    } catch (error) {
+      setDisconnectFeedback({
+        type: "error",
+        message:
+          error.message ||
+          "연동 해제 중 알 수 없는 오류가 발생했습니다. 다시 시도해주세요.",
+      });
+    } finally {
+      setDisconnecting(false);
+      setShowDisconnectModal(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (isDisabled) {
       alert("선택한 입력 방식에 맞춰 필요한 값을 채워주세요.");
@@ -128,6 +183,14 @@ export default function CodeInput({ onAnalyze }) {
       model,
       githubToken: normalizedGithubToken || undefined,
     });
+  };
+
+  const handleTokenChange = (value) => {
+    setGithubToken(value);
+    resetDisconnectFeedback();
+    if (!value && typeof window !== "undefined") {
+      localStorage.removeItem("githubAccessToken");
+    }
   };
 
   const renderModeContent = () => {
@@ -188,15 +251,14 @@ export default function CodeInput({ onAnalyze }) {
               className="text-field"
               placeholder="비공개 저장소면 토큰을 입력하세요"
               value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
+              onChange={(e) => handleTokenChange(e.target.value)}
             />
             <div className="helper-inline">
               <button
                 className="ghost-btn"
                 type="button"
                 onClick={() =>
-                  (window.location.href =
-                    "http://localhost:5000/api/github/login")
+                  (window.location.href = `${API_BASE}/api/github/login`)
                 }
               >
                 계정 연동하기
@@ -212,7 +274,40 @@ export default function CodeInput({ onAnalyze }) {
                   · {repoError}
                 </span>
               )}
+              {normalizedGithubToken && (
+                <button
+                  className="ghost-btn danger"
+                  type="button"
+                  onClick={() => setShowDisconnectModal(true)}
+                  disabled={disconnecting}
+                >
+                  {disconnecting ? "연동 해제 중..." : "연동 해제"}
+                </button>
+              )}
             </div>
+            {disconnectFeedback.message && (
+              <div
+                className={`status-banner ${
+                  disconnectFeedback.type === "error" ? "error" : "success"
+                }`}
+              >
+                <div>{disconnectFeedback.message}</div>
+                {disconnectFeedback.nextAction && (
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    {disconnectFeedback.nextAction}
+                    <button
+                      className="link-btn"
+                      type="button"
+                      onClick={() =>
+                        (window.location.href = `${API_BASE}/api/github/login`)
+                      }
+                    >
+                      다시 연동하기
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       default:
@@ -331,9 +426,38 @@ export default function CodeInput({ onAnalyze }) {
           onClick={handleSubmit}
           disabled={isDisabled}
         >
-          🔍 분석 시작
+          분석 시작
         </button>
       </div>
+      {showDisconnectModal && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3 style={{ marginTop: 0 }}>GitHub 연동을 해제할까요?</h3>
+            <p className="muted" style={{ marginBottom: 16 }}>
+              저장된 토큰을 서버와 브라우저에서 모두 삭제하고, 목록 캐시를
+              초기화합니다. 이후 다시 연동하려면 OAuth 로그인부터 시작하세요.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="ghost-btn"
+                type="button"
+                onClick={() => setShowDisconnectModal(false)}
+                disabled={disconnecting}
+              >
+                취소
+              </button>
+              <button
+                className="danger-btn"
+                type="button"
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+              >
+                {disconnecting ? "해제 중..." : "연동 해제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MotionPanel>
   );
 }
