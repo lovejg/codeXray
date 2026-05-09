@@ -1,0 +1,10 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+
+# 프로그래머스 문제 메타데이터/본문/태그 (로컬 전용, 직접 스크립트로 생성)
+prisma/problems-data.json
+prisma/problem-descriptions.json
+prisma/problem-tags.json

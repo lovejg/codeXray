@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-hover: #21253a;
+    --border: #2a2d3e;
+    --text: #a0aec0;
+    --text-h: #e2e8f0;
+    --accent: #7c3aed;
+    --accent-light: #8b5cf6;
+    --accent-bg: rgba(124, 58, 237, 0.15);
+    --accent-border: rgba(139, 92, 246, 0.4);
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: var(--text-h);
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+.markdown-body h1 { font-size: 1.25rem; }
+.markdown-body h2 { font-size: 1.1rem; }
+.markdown-body h3 { font-size: 1rem; }
+.markdown-body h1:first-child,
+.markdown-body h2:first-child,
+.markdown-body h3:first-child { margin-top: 0; }
+.markdown-body p { margin: 0.5em 0; }
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.5em 0;
+  padding-left: 1.25rem;
+}
+.markdown-body li { margin: 0.2em 0; }
+.markdown-body strong { color: var(--text-h); font-weight: 600; }
+.markdown-body a { color: var(--accent-light); text-decoration: underline; }
+.markdown-body code {
+  background: var(--bg-hover);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #e2e8f0;
+}
+.markdown-body pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin: 0.75em 0;
+  overflow-x: auto;
+}
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+.markdown-body blockquote {
+  border-left: 3px solid var(--accent-border);
+  padding-left: 0.85rem;
+  color: var(--text);
+  margin: 0.5em 0;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.875em;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.75rem;
+}
+.markdown-body th {
+  background: var(--bg-hover);
+  color: var(--text-h);
+  font-weight: 600;
+}
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}

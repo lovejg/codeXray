@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── 유저 ───────────────────────────────────────────────────
+model User {
+  id            Int          @id @default(autoincrement())
+  email         String       @unique
+  password      String?      // OAuth 전용 계정은 null
+  nickname      String       @unique
+  role          UserRole     @default(USER)
+  emailVerified Boolean      @default(false)
+  provider      AuthProvider @default(LOCAL)
+  providerId    String?      // OAuth provider 의 유저 id (LOCAL 은 null)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  solutions          Solution[]
+  notes              Note[]
+  communityPosts     CommunityPost[]
+  comments           Comment[]
+  bookmarks          BookmarkedProblem[]
+  levelFeedbacks     LevelFeedback[]
+  verificationTokens EmailVerificationToken[]
+  postVotes          PostVote[]
+  postReports        PostReport[]
+  notifications      Notification[]
+
+  @@unique([provider, providerId])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  NAVER
+}
+
+// ─── 이메일 인증 토큰 ────────────────────────────────────────
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─── 문제 ───────────────────────────────────────────────────
+model Problem {
+  id             Int           @id @default(autoincrement())
+  title          String
+  source         ProblemSource
+  level          Int           // 프로그래머스 공식 레벨 (0~5)
+  acceptanceRate Float?        // 프로그래머스 정답률 (0~100)
+  adjustedLevel  Float?        // 보정 레벨 (0.0~5.0, 사용자 피드백 + 정답률 집계)
+  tier           Tier?         // 커스텀 티어 (BRONZE_III ~ DIAMOND_I)
+  link           String        // 프로그래머스 문제 URL
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  tags            ProblemTag[]
+  solutions       Solution[]
+  communityPosts  CommunityPost[]
+  bookmarks       BookmarkedProblem[]
+  levelFeedbacks  LevelFeedback[]
+}
+
+// ─── 커스텀 티어 (5 family × 3 sub = 15 tiers) ──────────────
+enum Tier {
+  BRONZE_III
+  BRONZE_II
+  BRONZE_I
+  SILVER_III
+  SILVER_II
+  SILVER_I
+  GOLD_III
+  GOLD_II
+  GOLD_I
+  PLATINUM_III
+  PLATINUM_II
+  PLATINUM_I
+  DIAMOND_III
+  DIAMOND_II
+  DIAMOND_I
+}
+
+// ─── 사용자 난이도 피드백 ───────────────────────────────────
+model LevelFeedback {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  problemId Int
+  level     Int      // 사용자가 제시한 체감 난이도 (0~5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId]) // 한 사용자는 한 문제에 하나의 피드백만
+}
+
+enum ProblemSource {
+  PRACTICE           // 연습문제, 코딩 기초 트레이닝, 코딩테스트 입문
+  KAKAO_BLIND        // 카카오 블라인드 공채
+  KAKAO_INTERNSHIP   // 카카오 인턴십
+  KAKAO_CODE         // 카카오코드
+  MONTHLY_CHALLENGE  // 월간 코드 챌린지
+  WEEKLY_CHALLENGE   // 위클리 챌린지
+  SUMMER_WINTER      // Summer/Winter Coding
+  PCCE               // PCCE 기출문제
+  PCCP               // PCCP 기출문제
+  SQL                // SQL 문제 (SELECT, JOIN 등)
+  OTHER              // 현대모비스, Dev-Matching 등
+}
+
+// ─── 알고리즘 태그 ──────────────────────────────────────────
+model AlgorithmTag {
+  id   Int    @id @default(autoincrement())
+  name String @unique // e.g. "DP", "BFS", "그리디"
+
+  problems ProblemTag[]
+}
+
+model ProblemTag {
+  problemId Int
+  tagId     Int
+
+  problem Problem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     AlgorithmTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+}
+
+// ─── 문제 북마크 ─────────────────────────────────────────────
+model BookmarkedProblem {
+  userId    Int
+  problemId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+}
+
+// ─── 내 풀이 ────────────────────────────────────────────────
+model Solution {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  problemId Int
+  code      String   // 정답 코드
+  language  String   @default("python") // 사용 언어
+  starred   Boolean  @default(false)    // 다시 풀어야 할 문제
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  memo    Memo?
+
+  @@unique([userId, problemId])
+}
+
+// ─── 메모 (풀이별) ──────────────────────────────────────────
+model Memo {
+  id         Int     @id @default(autoincrement())
+  solutionId Int     @unique
+  wrongReason String? // 왜 틀렸는지
+  logic       String? // 풀이 논리
+  keyFunctions String? // 사용한 핵심 함수/문법
+  freeNote    String? // 자유 메모
+
+  solution Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+}
+
+// ─── 개인 노트 (코드/패턴/오답/팁/치트시트) ─────────────────────
+model Note {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      NoteType @default(CODE)
+  title     String
+  body      String   // 마크다운 본문 (코드 블록 포함 가능)
+  language  String?  // CODE 타입일 때 주 언어 (선택)
+  tags      String[] @default([]) // 자유 태그 (예: BFS, 파이썬, long long)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NoteType {
+  CODE    // 코드 템플릿 (BFS, 세그트리 등)
+  PATTERN // 접근 패턴/판단 기준
+  MISTAKE // 오답/실수 노트
+  OTHER   // 기타 (라이브러리/헤더 사용법, 치트시트 등)
+}
+
+// ─── 커뮤니티 + 건의사항 ─────────────────────────────────────
+model CommunityPost {
+  id           Int               @id @default(autoincrement())
+  userId       Int?              // 작성자 탈퇴 시 null — 콘텐츠는 익명화하여 보존
+  problemId    Int?
+  type         PostType
+  title        String
+  content      String
+  isPrivate    Boolean           @default(false)  // true 면 작성자 + 관리자만 조회 가능
+  hidden       Boolean           @default(false)  // 관리자가 신고 처리로 숨김
+  status       SuggestionStatus? // 건의사항 계열에만 사용 (QUESTION/SOLUTION_SHARE 는 null)
+  adminReply   String?           // 관리자 공식 답변
+  adminReplyAt DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user     User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  problem  Problem?     @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  comments Comment[]
+  votes    PostVote[]
+  reports  PostReport[]
+}
+
+// ─── 추천/비추천 ─────────────────────────────────────────────
+model PostVote {
+  userId    Int
+  postId    Int
+  value     Int      // 1 (추천) 또는 -1 (비추천)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+
+// ─── 게시글 신고 ────────────────────────────────────────────
+model PostReport {
+  id        Int          @id @default(autoincrement())
+  userId    Int          // 신고자
+  postId    Int
+  reason    String
+  status    ReportStatus @default(OPEN)
+  adminNote String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])  // 중복 신고 방지
+  @@index([postId])
+  @@index([status])
+}
+
+enum ReportStatus {
+  OPEN       // 미처리
+  HANDLED    // 숨김 처리 완료
+  DISMISSED  // 문제 없음 (기각)
+}
+
+enum PostType {
+  QUESTION         // 질문 (커뮤니티)
+  SOLUTION_SHARE   // 풀이 공유 (커뮤니티)
+  FEEDBACK         // 레벨/태그 의견 (건의사항)
+  BUG_REPORT       // 버그 신고 (건의사항)
+  FEATURE_REQUEST  // 기능 요청 (건의사항)
+}
+
+enum SuggestionStatus {
+  IN_PROGRESS  // 처리 중
+  RESOLVED     // 해결됨
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int?     // 작성자 탈퇴 시 null
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ─── 알림 ────────────────────────────────────────────────
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              // 받는 사람
+  type      NotificationType
+  payload   Json             // type 별 페이로드
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  COMMENT          // 내 글에 댓글
+  ADMIN_REPLY      // 내 건의사항에 관리자 답변
+  STATUS_CHANGE    // 내 건의사항 상태 변경
+  POST_HIDDEN      // 내 글 숨김 처리됨
+  REPORT_RESOLVED  // 내가 한 신고 처리 완료/기각
+  NEW_REPORT       // (관리자) 새 신고 도착
+  TIER_UP          // 새 티어 패밀리 첫 해결
+}
