@@ -5,6 +5,7 @@ import {
   EyeOff,
   Flag,
   TrendingUp,
+  AlarmClock,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Notification, NotificationType } from '../types'
@@ -98,6 +99,17 @@ export function formatNotification(n: Notification): FormattedNotification {
         link: `/problems/${p.problemId}`,
       }
     }
+    case 'STALE_SUGGESTION': {
+      const count = p.count ?? 0
+      const oldest = p.oldestDays ?? 0
+      return {
+        icon: <AlarmClock size={ICON_SIZE} />,
+        color: '#f59e0b',
+        title: '미처리 건의사항 누적',
+        body: `7일 이상 미처리 건의가 ${count}건 있습니다 (최장 ${oldest}일 경과)`,
+        link: '/suggestions',
+      }
+    }
     default: {
       const _exhaustive: never = n.type as never
       void _exhaustive
@@ -134,4 +146,5 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   REPORT_RESOLVED: '신고 결과',
   NEW_REPORT: '새 신고',
   TIER_UP: '티어 진입',
+  STALE_SUGGESTION: '미처리 건의 누적',
 }

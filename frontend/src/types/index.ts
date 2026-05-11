@@ -224,6 +224,7 @@ export interface PublicUserStats {
   solveCount: number
   mainTierFamily: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | null
   tierFamilyCounts: Record<string, number>
+  algorithmTagCounts: Record<string, number>
 }
 
 export type NotificationType =
@@ -234,6 +235,7 @@ export type NotificationType =
   | 'REPORT_RESOLVED'
   | 'NEW_REPORT'
   | 'TIER_UP'
+  | 'STALE_SUGGESTION'
 
 export interface Notification {
   id: number

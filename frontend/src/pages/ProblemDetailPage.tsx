@@ -11,6 +11,7 @@ import { communityApi } from '../api/community'
 import { POST_TYPE_LABEL } from '../types'
 import CopyButton from '../components/common/CopyButton'
 import PostContent from '../components/common/PostContent'
+import UserLink from '../components/common/UserLink'
 import LevelBadge from '../components/common/LevelBadge'
 import SourceBadge from '../components/common/SourceBadge'
 import TagBadge from '../components/common/TagBadge'
@@ -391,7 +392,7 @@ export default function ProblemDetailPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: 'var(--text-h)' }}>{p.title}</p>
                   <div className="flex items-center gap-2 text-xs mt-0.5" style={{ color: 'var(--text)' }}>
-                    <span>{p.user.nickname}</span>
+                    <UserLink userId={p.user.id} nickname={p.user.nickname} />
                     <span>·</span>
                     <span>{new Date(p.createdAt).toLocaleDateString('ko-KR')}</span>
                   </div>

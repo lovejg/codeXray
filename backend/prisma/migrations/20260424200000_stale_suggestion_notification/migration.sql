@@ -1,0 +1,1 @@
+ALTER TYPE "NotificationType" ADD VALUE 'STALE_SUGGESTION';

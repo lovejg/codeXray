@@ -8,6 +8,7 @@ import type { PostType } from '../types'
 import { POST_TYPE_LABEL, COMMUNITY_POST_TYPES } from '../types'
 import { useAuthStore } from '../store/authStore'
 import PostTypeBadge from '../components/common/PostTypeBadge'
+import UserLink from '../components/common/UserLink'
 
 const COMMUNITY_TYPES = COMMUNITY_POST_TYPES.map((t) => [t, POST_TYPE_LABEL[t]] as const)
 
@@ -147,7 +148,7 @@ export default function CommunityPage() {
                   </div>
                   <p className="font-medium" style={{ color: 'var(--text-h)' }}>{p.title}</p>
                   <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text)' }}>
-                    <span>{p.user.nickname}</span>
+                    <UserLink userId={p.user.id} nickname={p.user.nickname} />
                     <span>{new Date(p.createdAt).toLocaleDateString('ko-KR')}</span>
                   </div>
                 </div>

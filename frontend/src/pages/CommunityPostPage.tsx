@@ -11,6 +11,7 @@ import VoteButtons from '../components/common/VoteButtons'
 import AuthorStats from '../components/common/AuthorStats'
 import ReportModal from '../components/common/ReportModal'
 import PostTypeBadge from '../components/common/PostTypeBadge'
+import UserLink from '../components/common/UserLink'
 
 export default function CommunityPostPage() {
   const { id } = useParams<{ id: string }>()
@@ -88,7 +89,7 @@ export default function CommunityPostPage() {
             </div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--text-h)' }}>{post.title}</h1>
             <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: 'var(--text)' }}>
-              <span className="font-medium" style={{ color: 'var(--text-h)' }}>{post.user.nickname}</span>
+              <UserLink userId={post.user.id} nickname={post.user.nickname} className="font-medium" />
               <span>·</span>
               <span>{new Date(post.createdAt).toLocaleDateString('ko-KR')}</span>
             </div>
@@ -156,9 +157,9 @@ export default function CommunityPostPage() {
         {post.comments?.map((c: any) => (
           <div key={c.id} className="rounded-xl border p-4 flex items-start gap-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-h)' }}>{c.user.nickname}</span>
-                <span className="text-xs" style={{ color: 'var(--text)' }}>{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
+              <div className="flex items-center gap-2 mb-1.5 text-xs">
+                <UserLink userId={c.user.id} nickname={c.user.nickname} className="font-medium" />
+                <span style={{ color: 'var(--text)' }}>{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
               </div>
               <PostContent content={c.content} compact />
             </div>

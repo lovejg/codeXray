@@ -8,6 +8,7 @@ import { STATUS_LABEL, STATUS_COLOR } from '../types'
 import { useAuthStore, useIsAdmin } from '../store/authStore'
 import PostContent from '../components/common/PostContent'
 import PostTypeBadge from '../components/common/PostTypeBadge'
+import UserLink from '../components/common/UserLink'
 
 const STATUSES: SuggestionStatus[] = ['IN_PROGRESS', 'RESOLVED']
 
@@ -116,7 +117,7 @@ export default function SuggestionPostPage() {
             </div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--text-h)' }}>{post.title}</h1>
             <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text)' }}>
-              <span>{post.user.nickname}</span>
+              <UserLink userId={post.user.id} nickname={post.user.nickname} />
               <span>·</span>
               <span>{new Date(post.createdAt).toLocaleDateString('ko-KR')}</span>
             </div>
@@ -248,7 +249,7 @@ export default function SuggestionPostPage() {
           <div key={c.id} className="rounded-xl border p-4 flex items-start gap-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-medium" style={{ color: 'var(--text-h)' }}>{c.user.nickname}</span>
+                <UserLink userId={c.user.id} nickname={c.user.nickname} className="text-xs font-medium" />
                 <span className="text-xs" style={{ color: 'var(--text)' }}>{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
               </div>
               <PostContent content={c.content} compact />

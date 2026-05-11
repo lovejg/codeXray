@@ -92,9 +92,15 @@ export class CommunityService {
 
   async findAllPosts(
     user: RequestUser,
-    opts: { types?: PostType[]; problemId?: number; status?: SuggestionStatus; sort?: SortKey },
+    opts: {
+      types?: PostType[]
+      problemId?: number
+      status?: SuggestionStatus
+      sort?: SortKey
+      authorId?: number
+    },
   ) {
-    const { types, problemId, status, sort = 'recent' } = opts;
+    const { types, problemId, status, sort = 'recent', authorId } = opts;
     const posts = await this.prisma.communityPost.findMany({
       where: {
         AND: [
@@ -102,6 +108,7 @@ export class CommunityService {
           types && types.length > 0 ? { type: { in: types } } : {},
           problemId ? { problemId } : {},
           status ? { status } : {},
+          authorId ? { userId: authorId } : {},
         ],
       },
       include: {

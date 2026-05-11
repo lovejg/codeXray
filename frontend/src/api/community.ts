@@ -8,6 +8,7 @@ export const communityApi = {
     problemId?: number
     status?: SuggestionStatus
     sort?: 'recent' | 'votes'
+    authorId?: number
   }) => {
     const { types, ...rest } = params ?? {}
     const query: Record<string, any> = { ...rest }

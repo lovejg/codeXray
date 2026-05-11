@@ -13,6 +13,7 @@ import {
 } from '../types'
 import { useAuthStore } from '../store/authStore'
 import PostTypeBadge from '../components/common/PostTypeBadge'
+import UserLink from '../components/common/UserLink'
 
 const TYPES = SUGGESTION_POST_TYPES.map((t) => [t, POST_TYPE_LABEL[t]] as const)
 const STATUSES: SuggestionStatus[] = ['IN_PROGRESS', 'RESOLVED']
@@ -154,7 +155,7 @@ export default function SuggestionsPage() {
                   </div>
                   <p className="font-medium" style={{ color: 'var(--text-h)' }}>{p.title}</p>
                   <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text)' }}>
-                    <span>{p.user.nickname}</span>
+                    <UserLink userId={p.user.id} nickname={p.user.nickname} />
                     <span>{new Date(p.createdAt).toLocaleDateString('ko-KR')}</span>
                     {p.adminReply && <span style={{ color: '#10b981' }}>✓ 관리자 답변</span>}
                   </div>

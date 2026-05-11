@@ -169,7 +169,7 @@ export class UsersService {
     return { message: '회원 탈퇴가 완료되었습니다.' };
   }
 
-  /** 타인에게 노출 가능한 공개 통계: 풀이 수 + 주 티어 패밀리 */
+  /** 타인에게 노출 가능한 공개 통계: 풀이 수 + 티어 패밀리 + 알고리즘 태그 분포 */
   async getPublicStats(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -179,10 +179,18 @@ export class UsersService {
 
     const solutions = await this.prisma.solution.findMany({
       where: { userId: id },
-      select: { problem: { select: { tier: true } } },
+      select: {
+        problem: {
+          select: {
+            tier: true,
+            tags: { include: { tag: true } },
+          },
+        },
+      },
     });
 
     const solveCount = solutions.length;
+
     // 티어 패밀리 집계
     const familyCount: Record<string, number> = {};
     for (const s of solutions) {
@@ -199,13 +207,24 @@ export class UsersService {
       }
     }
 
+    // 알고리즘 태그 분포
+    const tagCount: Record<string, number> = {};
+    for (const s of solutions) {
+      for (const t of s.problem?.tags ?? []) {
+        const name = t.tag?.name;
+        if (!name) continue;
+        tagCount[name] = (tagCount[name] ?? 0) + 1;
+      }
+    }
+
     return {
       id: user.id,
       nickname: user.nickname,
       createdAt: user.createdAt,
       solveCount,
-      mainTierFamily, // BRONZE / SILVER / ... 또는 null
+      mainTierFamily,
       tierFamilyCounts: familyCount,
+      algorithmTagCounts: tagCount,
     };
   }
 

@@ -22,6 +22,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import AdminReportsPage from './pages/AdminReportsPage'
 import BookmarkletPage from './pages/BookmarkletPage'
 import NotificationsPage from './pages/NotificationsPage'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/import" element={<BookmarkletPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/users/:id" element={<PublicProfilePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -13,6 +13,7 @@ import {
   REPORT_STATUS_COLOR,
   POST_TYPE_LABEL,
 } from '../types'
+import UserLink from '../components/common/UserLink'
 
 const STATUSES: (ReportStatus | 'ALL')[] = ['OPEN', 'HANDLED', 'DISMISSED', 'ALL']
 
@@ -128,7 +129,7 @@ export default function AdminReportsPage() {
                       {post.title}
                     </Link>
                     <span className="text-xs" style={{ color: 'var(--text)' }}>
-                      작성자 {post.user.nickname}
+                      작성자 <UserLink userId={post.user.id} nickname={post.user.nickname} />
                     </span>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -154,7 +155,7 @@ export default function AdminReportsPage() {
                       <div key={r.id} className="flex items-start justify-between gap-3 text-xs">
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium" style={{ color: 'var(--text-h)' }}>{r.user.nickname}</span>
+                            <UserLink userId={r.user.id} nickname={r.user.nickname} className="font-medium" />
                             <span style={{ color: 'var(--text)' }}>{new Date(r.createdAt).toLocaleDateString('ko-KR')}</span>
                             <span className="px-2 py-0.5 rounded font-medium" style={{ background: c.bg, color: c.text }}>
                               {REPORT_STATUS_LABEL[r.status]}
