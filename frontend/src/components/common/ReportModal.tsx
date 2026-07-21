@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Flag, X } from 'lucide-react'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { communityApi } from '../../api/community'
 
 interface Props {
@@ -30,7 +31,7 @@ export default function ReportModal({ postId, onClose }: Props) {
       setDone(true)
       setError('')
     },
-    onError: (err: any) => setError(err.response?.data?.message ?? '신고 처리에 실패했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '신고 처리에 실패했습니다.')),
   })
 
   return (

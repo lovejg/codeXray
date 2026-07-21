@@ -1,8 +1,8 @@
 import client from './client'
-import type { ProblemSource } from '../types'
+import type { Problem, ProblemSource } from '../types'
 
 export interface ProblemsPage {
-  items: any[]
+  items: Problem[]
   total: number
   page: number
   pageSize: number
@@ -21,7 +21,7 @@ export const problemsApi = {
     pageSize?: number
   }): Promise<ProblemsPage> => client.get('/problems', { params }).then((r) => r.data),
 
-  getOne: (id: number) => client.get(`/problems/${id}`).then((r) => r.data),
+  getOne: (id: number): Promise<Problem> => client.get(`/problems/${id}`).then((r) => r.data),
 
   create: (data: {
     title: string

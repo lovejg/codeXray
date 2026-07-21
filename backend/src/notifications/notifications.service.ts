@@ -44,7 +44,10 @@ export class NotificationsService {
     return targets.map((t) => t.id);
   }
 
-  async list(userId: number, opts: { onlyUnread?: boolean; limit?: number; cursor?: number }) {
+  async list(
+    userId: number,
+    opts: { onlyUnread?: boolean; limit?: number; cursor?: number },
+  ) {
     const limit = Math.min(opts.limit ?? 20, 50);
     return this.prisma.notification.findMany({
       where: { userId, ...(opts.onlyUnread ? { isRead: false } : {}) },

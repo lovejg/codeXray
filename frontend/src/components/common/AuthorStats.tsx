@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { BookOpen } from 'lucide-react'
 import { userStatsApi } from '../../api/community'
-import { FAMILY_COLORS, familyLabel, type TierFamily } from './TierBadge'
+import { FAMILY_COLORS, familyLabel, type TierFamily } from '../../lib/tier'
 import type { PublicUserStats } from '../../types'
 
 interface Props {

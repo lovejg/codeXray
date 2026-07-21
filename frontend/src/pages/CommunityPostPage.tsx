@@ -154,7 +154,7 @@ export default function CommunityPostPage() {
       {/* 댓글 */}
       <div className="flex flex-col gap-3">
         <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>댓글 {post.comments?.length ?? 0}개</h2>
-        {post.comments?.map((c: any) => (
+        {post.comments?.map((c) => (
           <div key={c.id} className="rounded-xl border p-4 flex items-start gap-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1.5 text-xs">

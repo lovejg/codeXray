@@ -1,5 +1,12 @@
 import client from './client'
-import type { PostType, ReportStatus, SuggestionStatus } from '../types'
+import type {
+  CommunityPost,
+  PostReport,
+  PostType,
+  PublicUserStats,
+  ReportStatus,
+  SuggestionStatus,
+} from '../types'
 
 export const communityApi = {
   getPosts: (params?: {
@@ -9,13 +16,13 @@ export const communityApi = {
     status?: SuggestionStatus
     sort?: 'recent' | 'votes'
     authorId?: number
-  }) => {
+  }): Promise<CommunityPost[]> => {
     const { types, ...rest } = params ?? {}
-    const query: Record<string, any> = { ...rest }
+    const query: Record<string, string | number> = { ...rest }
     if (types && types.length > 0) query.types = types.join(',')
     return client.get('/community/posts', { params: query }).then((r) => r.data)
   },
-  getPost: (id: number) => client.get(`/community/posts/${id}`).then((r) => r.data),
+  getPost: (id: number): Promise<CommunityPost> => client.get(`/community/posts/${id}`).then((r) => r.data),
   createPost: (data: {
     type: PostType
     title: string
@@ -45,7 +52,7 @@ export const communityApi = {
     client.post(`/community/posts/${postId}/report`, { reason }).then((r) => r.data),
 
   // 관리자
-  adminListReports: (status?: ReportStatus) =>
+  adminListReports: (status?: ReportStatus): Promise<PostReport[]> =>
     client.get('/community/admin/reports', { params: status ? { status } : {} }).then((r) => r.data),
   adminUpdateReport: (id: number, data: { status: ReportStatus; adminNote?: string }) =>
     client.patch(`/community/admin/reports/${id}`, data).then((r) => r.data),
@@ -54,6 +61,6 @@ export const communityApi = {
 }
 
 export const userStatsApi = {
-  getPublicStats: (userId: number) =>
+  getPublicStats: (userId: number): Promise<PublicUserStats> =>
     client.get(`/users/${userId}/stats`).then((r) => r.data),
 }

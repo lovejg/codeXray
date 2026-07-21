@@ -19,7 +19,7 @@ export default function ProblemSelect({ value, onChange, placeholder = '문제 �
     queryKey: ['problems', 'all'],
     queryFn: () => problemsApi.getAll({ pageSize: 2000 }),
   })
-  const problems: ProblemLite[] = problemsData?.items ?? []
+  const problems: ProblemLite[] = useMemo(() => problemsData?.items ?? [], [problemsData])
 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -50,6 +50,8 @@ export default function ProblemSelect({ value, onChange, placeholder = '문제 �
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 0)
+      // 드롭다운을 열 때 하이라이트를 첫 항목으로 초기화
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveIndex(0)
     }
   }, [open])

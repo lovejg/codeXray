@@ -1,4 +1,8 @@
-import { acceptanceRateToLevel, computeAdjustedLevel, levelToTier } from './ratings.util';
+import {
+  acceptanceRateToLevel,
+  computeAdjustedLevel,
+  levelToTier,
+} from './ratings.util';
 
 describe('ratings.util', () => {
   describe('acceptanceRateToLevel', () => {
@@ -50,7 +54,10 @@ describe('ratings.util', () => {
       // 피드백 1개 [5]: (2*1 + 2*0 + 5) / (4+1) = 7/5 = 1.4
       const r1 = computeAdjustedLevel({ ...params, feedbackLevels: [5] });
       // 피드백 10개 [5,5,...]: (2 + 0 + 50) / 14 ≈ 3.71
-      const r10 = computeAdjustedLevel({ ...params, feedbackLevels: Array(10).fill(5) });
+      const r10 = computeAdjustedLevel({
+        ...params,
+        feedbackLevels: Array<number>(10).fill(5),
+      });
 
       expect(r0).toBe(0.5);
       expect(r1).toBeCloseTo(1.4, 5);

@@ -1,34 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { Code2, Loader2, XCircle } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import type { User } from '../types'
 
 export default function OAuthCallbackPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
-    const err = params.get('error')
-    if (err) {
-      setError(err)
-      return
-    }
-    const token = params.get('token')
-    const userRaw = params.get('user')
-    if (!token || !userRaw) {
-      setError('OAuth 응답이 올바르지 않습니다.')
-      return
+  const oauthError = params.get('error')
+  const token = params.get('token')
+  const refreshToken = params.get('refreshToken')
+  const userRaw = params.get('user')
+
+  // URL 파라미터를 렌더 중에 해석 — 성공 시에만 effect에서 로그인 처리한다.
+  const result = useMemo(():
+    | { user: User; token: string; refreshToken: string }
+    | { error: string } => {
+    if (oauthError) return { error: oauthError }
+    if (!token || !refreshToken || !userRaw) {
+      return { error: 'OAuth 응답이 올바르지 않습니다.' }
     }
     try {
-      const user = JSON.parse(userRaw)
-      setAuth(user, token)
-      navigate('/', { replace: true })
+      return { user: JSON.parse(userRaw) as User, token, refreshToken }
     } catch {
-      setError('OAuth 응답을 해석할 수 없습니다.')
+      return { error: 'OAuth 응답을 해석할 수 없습니다.' }
     }
-  }, [params, setAuth, navigate])
+  }, [oauthError, token, refreshToken, userRaw])
+
+  const error = 'error' in result ? result.error : ''
+
+  useEffect(() => {
+    if ('user' in result) {
+      setAuth(result.user, result.token, result.refreshToken)
+      navigate('/', { replace: true })
+    }
+  }, [result, setAuth, navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>

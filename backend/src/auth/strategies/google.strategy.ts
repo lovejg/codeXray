@@ -1,6 +1,10 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback, type Profile } from 'passport-google-oauth20';
+import {
+  Strategy,
+  VerifyCallback,
+  type Profile,
+} from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
 
 export interface GoogleProfilePayload {
@@ -33,16 +37,26 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ) {
     const email = profile.emails?.[0]?.value;
     // Google 은 OIDC id_token 의 email_verified 클레임을 profile._json 에 담아줌
-    const json = (profile as any)._json as { email_verified?: boolean } | undefined;
+    const json = (
+      profile as unknown as { _json?: { email_verified?: boolean } }
+    )._json;
+    const primaryEmail = profile.emails?.[0] as
+      | { value: string; verified?: boolean }
+      | undefined;
     const emailVerified =
-      json?.email_verified === true ||
-      (profile.emails?.[0] as any)?.verified === true;
+      json?.email_verified === true || primaryEmail?.verified === true;
 
     if (!email) {
-      return done(new UnauthorizedException('Google 계정에서 이메일을 가져오지 못했습니다.'));
+      return done(
+        new UnauthorizedException(
+          'Google 계정에서 이메일을 가져오지 못했습니다.',
+        ),
+      );
     }
     if (!emailVerified) {
-      return done(new UnauthorizedException('Google 계정 이메일이 인증되지 않았습니다.'));
+      return done(
+        new UnauthorizedException('Google 계정 이메일이 인증되지 않았습니다.'),
+      );
     }
 
     const payload: GoogleProfilePayload = {

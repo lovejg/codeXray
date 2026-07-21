@@ -37,7 +37,10 @@ export class VerificationService {
       where: { userId, usedAt: null },
       orderBy: { createdAt: 'desc' },
     });
-    if (recent && Date.now() - recent.createdAt.getTime() < RESEND_COOLDOWN_MS) {
+    if (
+      recent &&
+      Date.now() - recent.createdAt.getTime() < RESEND_COOLDOWN_MS
+    ) {
       throw new BadRequestException('잠시 후 다시 시도해주세요.');
     }
 
@@ -56,10 +59,16 @@ export class VerificationService {
       },
     });
 
-    await this.mail.sendVerificationEmail(user.email, user.nickname, this.buildLink(token));
+    await this.mail.sendVerificationEmail(
+      user.email,
+      user.nickname,
+      this.buildLink(token),
+    );
   }
 
-  async verify(token: string): Promise<{ userId: number; email: string; role: UserRole }> {
+  async verify(
+    token: string,
+  ): Promise<{ userId: number; email: string; role: UserRole }> {
     const record = await this.prisma.emailVerificationToken.findUnique({
       where: { token },
       include: { user: true },
@@ -67,7 +76,9 @@ export class VerificationService {
     if (!record) throw new BadRequestException('유효하지 않은 토큰입니다.');
     if (record.usedAt) throw new BadRequestException('이미 사용된 토큰입니다.');
     if (record.expiresAt.getTime() < Date.now()) {
-      throw new BadRequestException('만료된 토큰입니다. 인증 메일을 재전송해주세요.');
+      throw new BadRequestException(
+        '만료된 토큰입니다. 인증 메일을 재전송해주세요.',
+      );
     }
 
     const adminEmail = process.env.ADMIN_EMAIL;
@@ -82,7 +93,9 @@ export class VerificationService {
         where: { id: record.userId },
         data: {
           emailVerified: true,
-          ...(shouldBeAdmin && record.user.role !== 'ADMIN' ? { role: 'ADMIN' } : {}),
+          ...(shouldBeAdmin && record.user.role !== 'ADMIN'
+            ? { role: 'ADMIN' }
+            : {}),
         },
       }),
     ]);

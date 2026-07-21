@@ -9,6 +9,8 @@ export const authApi = {
     client.post('/auth/verify-email', { token }).then((r) => r.data),
   resendVerification: (email: string) =>
     client.post('/auth/resend-verification', { email }).then((r) => r.data),
+  logout: (refreshToken: string) =>
+    client.post('/auth/logout', { refreshToken }).then((r) => r.data),
   me: () => client.get('/users/me').then((r) => r.data),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     client.patch('/users/me/password', data).then((r) => r.data),

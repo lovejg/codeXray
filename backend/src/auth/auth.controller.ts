@@ -1,14 +1,24 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { errorMessage } from '../common/error.util';
 import {
   RegisterDto,
   LoginDto,
   VerifyEmailDto,
   ResendVerificationDto,
+  RefreshTokenDto,
 } from './dto/auth.dto';
 import type { GoogleProfilePayload } from './strategies/google.strategy';
 import type { NaverProfilePayload } from './strategies/naver.strategy';
@@ -43,7 +53,8 @@ export class AuthController {
   @Post('verify-email')
   @ApiOperation({
     summary: '이메일 인증',
-    description: '메일 링크로 받은 토큰을 검증하고 `emailVerified=true` + JWT 발급.',
+    description:
+      '메일 링크로 받은 토큰을 검증하고 `emailVerified=true` + JWT 발급.',
   })
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.token);
@@ -59,6 +70,26 @@ export class AuthController {
     return this.authService.resendVerification(dto.email);
   }
 
+  @Post('refresh')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } }) // 1분에 30회
+  @ApiOperation({
+    summary: 'Access token 재발급',
+    description:
+      'refresh token 을 로테이션하여 새 access + refresh token 을 발급. 폐기된 토큰 재사용이 감지되면 세션 전체를 무효화.',
+  })
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refreshToken);
+  }
+
+  @Post('logout')
+  @ApiOperation({
+    summary: '로그아웃',
+    description: 'refresh token 이 속한 세션(family)을 폐기한다.',
+  })
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto.refreshToken);
+  }
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
@@ -66,7 +97,7 @@ export class AuthController {
     description: '브라우저에서 직접 진입. Passport 가 Google 로 리다이렉트.',
   })
   googleStart() {
-    // Passport 가 Google 로 리다이렉트
+    // Passport가 Google로 리다이렉트
   }
 
   @Get('google/callback')
@@ -86,7 +117,7 @@ export class AuthController {
   @UseGuards(AuthGuard('naver'))
   @ApiOperation({ summary: 'Naver OAuth 시작' })
   naverStart() {
-    // Passport 가 Naver 로 리다이렉트
+    // Passport가 Naver로 리다이렉트
   }
 
   @Get('naver/callback')
@@ -100,19 +131,24 @@ export class AuthController {
 
   private async oauthCallback(
     res: Response,
-    handler: () => Promise<{ accessToken: string; user: unknown }>,
+    handler: () => Promise<{
+      accessToken: string;
+      refreshToken: string;
+      user: unknown;
+    }>,
   ) {
     const frontend = process.env.FRONTEND_URL ?? 'http://localhost:5173';
     try {
       const result = await handler();
       const params = new URLSearchParams({
         token: result.accessToken,
+        refreshToken: result.refreshToken,
         user: JSON.stringify(result.user),
       });
       res.redirect(`${frontend}/oauth/callback?${params.toString()}`);
-    } catch (err: any) {
-      const msg = err?.response?.message ?? err?.message ?? 'OAuth 로그인 실패';
-      const params = new URLSearchParams({ error: String(msg) });
+    } catch (err) {
+      const msg = errorMessage(err, 'OAuth 로그인 실패');
+      const params = new URLSearchParams({ error: msg });
       res.redirect(`${frontend}/oauth/callback?${params.toString()}`);
     }
   }

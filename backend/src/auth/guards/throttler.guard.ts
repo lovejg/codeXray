@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import type { Request } from 'express';
+import type { AuthUser } from '../decorators/current-user.decorator';
 
 /**
- * 로그인된 사용자는 user.id, 아니면 IP 로 rate limit 트래커 키를 만든다.
- * NAT 뒤 동일 IP 사용자들이 함께 차단되는 가짜 양성을 줄임.
+ * 인증 사용자는 user id 로, 비인증 요청은 IP 로 rate limit 을 추적한다.
+ * (같은 IP 뒤의 여러 로그인 사용자를 분리해서 카운트)
  */
 @Injectable()
 export class AppThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Record<string, any>): Promise<string> {
-    return req.user?.id ? `user-${req.user.id}` : (req.ip ?? 'unknown');
+  protected getTracker(req: Request & { user?: AuthUser }): Promise<string> {
+    const tracker = req.user?.id
+      ? `user-${req.user.id}`
+      : (req.ip ?? 'unknown');
+    return Promise.resolve(tracker);
   }
 }

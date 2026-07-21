@@ -26,7 +26,8 @@ export class AiService {
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const result = message.content[0].type === 'text' ? message.content[0].text : '';
+    const result =
+      message.content[0].type === 'text' ? message.content[0].text : '';
     return { result };
   }
 

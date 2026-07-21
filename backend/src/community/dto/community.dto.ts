@@ -1,4 +1,13 @@
-import { IsString, IsEnum, IsInt, IsOptional, IsBoolean, IsIn, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+  IsIn,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { PostType, ReportStatus, SuggestionStatus } from '@prisma/client';
 
 export class CreatePostDto {
@@ -10,9 +19,13 @@ export class CreatePostDto {
   type: PostType;
 
   @IsString()
+  @MinLength(1)
+  @MaxLength(200)
   title: string;
 
   @IsString()
+  @MinLength(1)
+  @MaxLength(20000)
   content: string;
 
   @IsOptional()
@@ -23,10 +36,14 @@ export class CreatePostDto {
 export class UpdatePostDto {
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(200)
   title?: string;
 
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(20000)
   content?: string;
 
   @IsOptional()
@@ -41,11 +58,14 @@ export class UpdateStatusDto {
 
 export class UpdateAdminReplyDto {
   @IsString()
+  @MaxLength(5000)
   adminReply: string;
 }
 
 export class CreateCommentDto {
   @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
   content: string;
 }
 

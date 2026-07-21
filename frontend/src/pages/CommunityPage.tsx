@@ -131,7 +131,7 @@ export default function CommunityPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {posts.map((p: any) => {
+          {posts.map((p) => {
             return (
               <Link
                 key={p.id}

@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { errorMessage } from '../common/error.util';
 
 const TZ = 'Asia/Seoul';
 
@@ -37,8 +38,8 @@ export class SchedulerService {
       const result = await this.prisma.emailVerificationToken.deleteMany({
         where: {
           OR: [
-            { expiresAt: { lt: cutoff } },     // 30일 이상 만료
-            { usedAt: { lt: cutoff } },        // 30일 이상 전에 사용됨
+            { expiresAt: { lt: cutoff } }, // 30일 이상 만료
+            { usedAt: { lt: cutoff } }, // 30일 이상 전에 사용됨
           ],
         },
       });
@@ -73,7 +74,7 @@ export class SchedulerService {
       const stale = await this.prisma.communityPost.findMany({
         where: {
           type: { in: ['FEEDBACK', 'BUG_REPORT', 'FEATURE_REQUEST'] },
-          status: null,         // 아직 처리 중/해결됨 상태가 아님
+          status: null, // 아직 처리 중/해결됨 상태가 아님
           hidden: false,
           createdAt: { lt: cutoff },
         },
@@ -104,17 +105,26 @@ export class SchedulerService {
   // 공통: 로깅 + 에러 격리 wrapper
   // 컨트롤러의 수동 트리거에서도 호출 가능하도록 별도 메서드 노출.
   // ────────────────────────────────────────────────────
-  async runJob<T>(name: string, fn: () => Promise<T>): Promise<{ ok: boolean; result?: T; error?: string }> {
+  async runJob<T>(
+    name: string,
+    fn: () => Promise<T>,
+  ): Promise<{ ok: boolean; result?: T; error?: string }> {
     const startedAt = Date.now();
     this.logger.log(`▶ [${name}] 시작`);
     try {
       const result = await fn();
       const elapsed = Date.now() - startedAt;
-      this.logger.log(`✓ [${name}] 완료 (${elapsed}ms) ${JSON.stringify(result)}`);
+      this.logger.log(
+        `✓ [${name}] 완료 (${elapsed}ms) ${JSON.stringify(result)}`,
+      );
       return { ok: true, result };
-    } catch (err: any) {
-      this.logger.error(`✗ [${name}] 실패: ${err?.message ?? err}`, err?.stack);
-      return { ok: false, error: String(err?.message ?? err) };
+    } catch (err) {
+      const message = errorMessage(err);
+      this.logger.error(
+        `✗ [${name}] 실패: ${message}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+      return { ok: false, error: message };
     }
   }
 }

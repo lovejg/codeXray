@@ -7,7 +7,7 @@ import { solutionsApi } from '../api/solutions'
 import { bookmarksApi } from '../api/bookmarks'
 import { useAuthStore } from '../store/authStore'
 import LevelBadge from '../components/common/LevelBadge'
-import { TIER_FAMILIES, FAMILY_COLORS, familyLabel } from '../components/common/TierBadge'
+import { TIER_FAMILIES, FAMILY_COLORS, familyLabel } from '../lib/tier'
 import ChangePasswordModal from '../components/common/ChangePasswordModal'
 import DeleteAccountModal from '../components/common/DeleteAccountModal'
 
@@ -39,7 +39,7 @@ export default function ProfilePage() {
     enabled: !!token,
   })
 
-  const starred = solutions.filter((s: any) => s.starred)
+  const starred = solutions.filter((s) => s.starred)
 
   const handleLogout = () => {
     logout()
@@ -50,14 +50,14 @@ export default function ProfilePage() {
 
   const tierCounts = TIER_FAMILIES.map((family) => ({
     family,
-    count: solutions.filter((s: any) => typeof s.problem.tier === 'string' && s.problem.tier.startsWith(family + '_')).length,
+    count: solutions.filter((s) => typeof s.problem.tier === 'string' && s.problem.tier.startsWith(family + '_')).length,
   }))
-  const unrated = solutions.filter((s: any) => !s.problem.tier).length
+  const unrated = solutions.filter((s) => !s.problem.tier).length
   const tieredTotal = solutions.length - unrated
 
   // 알고리즘 태그별 풀이 수 (내림차순)
   const tagCountsMap = new Map<string, number>()
-  for (const s of solutions as any[]) {
+  for (const s of solutions) {
     for (const t of s.problem.tags ?? []) {
       const name = t.tag?.name
       if (!name) continue
@@ -178,7 +178,7 @@ export default function ProfilePage() {
         <div className="rounded-xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
           <h2 className="font-semibold mb-4 text-sm" style={{ color: 'var(--text-h)' }}>다시 풀어야 할 문제 ⭐</h2>
           <div className="flex flex-col gap-2">
-            {starred.map((s: any) => (
+            {starred.map((s) => (
               <Link
                 key={s.id}
                 to={`/problems/${s.problemId}`}

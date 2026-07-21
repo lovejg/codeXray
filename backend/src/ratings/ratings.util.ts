@@ -9,7 +9,9 @@ const BETA = 2; // 정답률 기반 레벨의 가중치
  * 정답률이 낮을수록 어려운 문제 → 높은 레벨.
  * 선형: 100% → 0, 0% → 5
  */
-export function acceptanceRateToLevel(rate: number | null | undefined): number | null {
+export function acceptanceRateToLevel(
+  rate: number | null | undefined,
+): number | null {
   if (rate == null) return null;
   const clamped = Math.max(0, Math.min(100, rate));
   return 5 * (1 - clamped / 100);
@@ -67,9 +69,19 @@ export function levelToTier(level: number): Tier {
 
 // 티어 정렬 순서 (낮음 → 높음). 필터링/슬라이더 인덱스에 사용.
 export const TIER_ORDER: Tier[] = [
-  'BRONZE_III', 'BRONZE_II', 'BRONZE_I',
-  'SILVER_III', 'SILVER_II', 'SILVER_I',
-  'GOLD_III', 'GOLD_II', 'GOLD_I',
-  'PLATINUM_III', 'PLATINUM_II', 'PLATINUM_I',
-  'DIAMOND_III', 'DIAMOND_II', 'DIAMOND_I',
+  'BRONZE_III',
+  'BRONZE_II',
+  'BRONZE_I',
+  'SILVER_III',
+  'SILVER_II',
+  'SILVER_I',
+  'GOLD_III',
+  'GOLD_II',
+  'GOLD_I',
+  'PLATINUM_III',
+  'PLATINUM_II',
+  'PLATINUM_I',
+  'DIAMOND_III',
+  'DIAMOND_II',
+  'DIAMOND_I',
 ];

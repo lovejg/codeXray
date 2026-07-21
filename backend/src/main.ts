@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // 보안 HTTP 헤더 (XSS/clickjacking 등 완화)
+  app.use(helmet());
 
   // 전역 ValidationPipe (DTO 자동 검증)
   app.useGlobalPipes(
@@ -71,7 +75,9 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Server running on http://localhost:${port}/api`);
-  console.log(`Swagger docs at  http://localhost:${port}/api-docs`);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`Server running on http://localhost:${port}/api`);
+  logger.log(`Swagger docs at  http://localhost:${port}/api-docs`);
 }
-bootstrap();
+void bootstrap();

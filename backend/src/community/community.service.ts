@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -11,9 +16,20 @@ import {
   CreateReportDto,
   UpdateReportDto,
 } from './dto/community.dto';
-import { PostType, Prisma, ReportStatus, SuggestionStatus, UserRole } from '@prisma/client';
+import {
+  PostReport,
+  PostType,
+  Prisma,
+  ReportStatus,
+  SuggestionStatus,
+} from '@prisma/client';
+import { type AuthUser } from '../auth/decorators/current-user.decorator';
 
-const SUGGESTION_TYPES: PostType[] = ['FEEDBACK', 'BUG_REPORT', 'FEATURE_REQUEST'];
+const SUGGESTION_TYPES: PostType[] = [
+  'FEEDBACK',
+  'BUG_REPORT',
+  'FEATURE_REQUEST',
+];
 const VOTABLE_TYPES: PostType[] = ['QUESTION', 'SOLUTION_SHARE'];
 
 // 탈퇴한 사용자의 글/댓글이 user: null 로 떨어지면 표시용으로 정규화
@@ -23,13 +39,21 @@ function isSuggestion(type: PostType) {
   return SUGGESTION_TYPES.includes(type);
 }
 
-function withAnonymousUser<T extends Record<string, any>>(obj: T): T {
+function withAnonymousUser<T extends Record<string, unknown>>(obj: T): T {
   return { ...obj, user: obj.user ?? ANONYMOUS_USER };
 }
 
-type RequestUser = { id: number; role?: UserRole } | undefined;
+type RequestUser = AuthUser | null;
 
 type SortKey = 'recent' | 'votes';
+
+/** enrichPosts 가 각 게시글에 덧붙이는 투표 집계 필드 */
+type VoteAggregate = {
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  myVote: number;
+};
 
 @Injectable()
 export class CommunityService {
@@ -52,12 +76,12 @@ export class CommunityService {
     return { isPrivate: false, hidden: false };
   }
 
-  private async enrichPosts(
-    posts: Array<{ id: number; [k: string]: any }>,
+  private async enrichPosts<T extends { id: number }>(
+    posts: T[],
     userId: number | undefined,
-  ) {
+  ): Promise<Array<T & VoteAggregate>> {
     const ids = posts.map((p) => p.id);
-    if (ids.length === 0) return posts;
+    if (ids.length === 0) return [];
 
     // 투표 집계
     const voteAgg = await this.prisma.postVote.groupBy({
@@ -93,11 +117,11 @@ export class CommunityService {
   async findAllPosts(
     user: RequestUser,
     opts: {
-      types?: PostType[]
-      problemId?: number
-      status?: SuggestionStatus
-      sort?: SortKey
-      authorId?: number
+      types?: PostType[];
+      problemId?: number;
+      status?: SuggestionStatus;
+      sort?: SortKey;
+      authorId?: number;
     },
   ) {
     const { types, problemId, status, sort = 'recent', authorId } = opts;
@@ -122,7 +146,7 @@ export class CommunityService {
     const enriched = await this.enrichPosts(posts, user?.id);
     if (sort === 'votes') {
       enriched.sort(
-        (a: any, b: any) =>
+        (a, b) =>
           b.score - a.score ||
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
@@ -152,12 +176,11 @@ export class CommunityService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
     const [enriched] = await this.enrichPosts([post], user?.id);
-    // 본문 + 댓글 작성자 모두 정규화
-    const normalized = withAnonymousUser(enriched as any);
-    if (Array.isArray(normalized.comments)) {
-      normalized.comments = normalized.comments.map(withAnonymousUser);
-    }
-    return normalized;
+    // 본문 + 댓글 작성자 모두 정규화 (탈퇴 사용자 표시용)
+    return {
+      ...withAnonymousUser(enriched),
+      comments: enriched.comments.map(withAnonymousUser),
+    };
   }
 
   createPost(userId: number, dto: CreatePostDto) {
@@ -177,7 +200,8 @@ export class CommunityService {
   async updatePost(id: number, user: RequestUser, dto: UpdatePostDto) {
     const post = await this.prisma.communityPost.findUnique({ where: { id } });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
-    if (post.userId !== user?.id) throw new ForbiddenException('수정 권한이 없습니다.');
+    if (post.userId !== user?.id)
+      throw new ForbiddenException('수정 권한이 없습니다.');
     return this.prisma.communityPost.update({ where: { id }, data: dto });
   }
 
@@ -186,7 +210,8 @@ export class CommunityService {
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     const isOwner = post.userId === user?.id;
     const isAdmin = user?.role === 'ADMIN';
-    if (!isOwner && !isAdmin) throw new ForbiddenException('삭제 권한이 없습니다.');
+    if (!isOwner && !isAdmin)
+      throw new ForbiddenException('삭제 권한이 없습니다.');
     return this.prisma.communityPost.delete({ where: { id } });
   }
 
@@ -194,7 +219,9 @@ export class CommunityService {
     const post = await this.prisma.communityPost.findUnique({ where: { id } });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (!isSuggestion(post.type)) {
-      throw new ForbiddenException('건의사항 글에서만 상태를 변경할 수 있습니다.');
+      throw new ForbiddenException(
+        '건의사항 글에서만 상태를 변경할 수 있습니다.',
+      );
     }
     const updated = await this.prisma.communityPost.update({
       where: { id },
@@ -222,7 +249,9 @@ export class CommunityService {
     const post = await this.prisma.communityPost.findUnique({ where: { id } });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (!isSuggestion(post.type)) {
-      throw new ForbiddenException('건의사항 글에서만 관리자 답변을 달 수 있습니다.');
+      throw new ForbiddenException(
+        '건의사항 글에서만 관리자 답변을 달 수 있습니다.',
+      );
     }
     const reply = dto.adminReply.trim();
     const updated = await this.prisma.communityPost.update({
@@ -250,7 +279,9 @@ export class CommunityService {
   }
 
   async createComment(postId: number, userId: number, dto: CreateCommentDto) {
-    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+    });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (post.isPrivate && post.userId !== userId) {
       throw new ForbiddenException('비공개 게시글에는 댓글을 달 수 없습니다.');
@@ -285,13 +316,16 @@ export class CommunityService {
     if (!comment) throw new NotFoundException('댓글을 찾을 수 없습니다.');
     const isOwner = comment.userId === user?.id;
     const isAdmin = user?.role === 'ADMIN';
-    if (!isOwner && !isAdmin) throw new ForbiddenException('삭제 권한이 없습니다.');
+    if (!isOwner && !isAdmin)
+      throw new ForbiddenException('삭제 권한이 없습니다.');
     return this.prisma.comment.delete({ where: { id } });
   }
 
   // ─── 투표 ────────────────────────────────────────────
   async vote(postId: number, userId: number, dto: VotePostDto) {
-    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+    });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (!VOTABLE_TYPES.includes(post.type)) {
       throw new BadRequestException('이 글에는 추천/비추천을 할 수 없습니다.');
@@ -332,23 +366,33 @@ export class CommunityService {
     const mine = await this.prisma.postVote.findUnique({
       where: { userId_postId: { userId, postId } },
     });
-    return { upvotes: up, downvotes: down, score: up - down, myVote: mine?.value ?? 0 };
+    return {
+      upvotes: up,
+      downvotes: down,
+      score: up - down,
+      myVote: mine?.value ?? 0,
+    };
   }
 
   // ─── 신고 ────────────────────────────────────────────
   async report(postId: number, userId: number, dto: CreateReportDto) {
-    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+    });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (post.userId === userId) {
       throw new BadRequestException('본인 글은 신고할 수 없습니다.');
     }
-    let created;
+    let created: PostReport;
     try {
       created = await this.prisma.postReport.create({
         data: { postId, userId, reason: dto.reason },
       });
-    } catch (e: any) {
-      if (e?.code === 'P2002') {
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
         throw new BadRequestException('이미 신고한 게시글입니다.');
       }
       throw e;
@@ -402,7 +446,10 @@ export class CommunityService {
     });
 
     // 상태가 실제로 종결되었을 때 신고자에게 알림 (OPEN → HANDLED/DISMISSED)
-    if (report.status !== dto.status && (dto.status === 'HANDLED' || dto.status === 'DISMISSED')) {
+    if (
+      report.status !== dto.status &&
+      (dto.status === 'HANDLED' || dto.status === 'DISMISSED')
+    ) {
       await this.notifications.create({
         userId: report.userId,
         type: 'REPORT_RESOLVED',
@@ -420,7 +467,9 @@ export class CommunityService {
 
   // ─── 숨김 ────────────────────────────────────────────
   async setHidden(postId: number, hidden: boolean) {
-    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+    });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     // 숨길 때만 관련 신고들을 자동으로 HANDLED 로 일괄 처리
     // (해제 시엔 자동 되돌리지 않음 — 운영자가 다시 판단)

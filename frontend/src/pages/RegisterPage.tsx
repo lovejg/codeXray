@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Code2, Mail } from 'lucide-react'
+import { getApiErrorMessage } from '../lib/apiError'
 import { authApi } from '../api/auth'
 import OAuthButtons, { OAuthDivider } from '../components/common/OAuthButtons'
 
@@ -17,8 +18,8 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register(form)
       setSentTo(res.email ?? form.email)
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? '회원가입에 실패했습니다.')
+    } catch (err) {
+      setError(getApiErrorMessage(err, '회원가입에 실패했습니다.'))
     } finally {
       setLoading(false)
     }

@@ -127,7 +127,7 @@ export default function SuggestionsPage() {
         <div className="text-center py-20" style={{ color: 'var(--text)' }}>건의사항이 없습니다.</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {posts.map((p: any) => {
+          {posts.map((p) => {
             const sc = p.status ? STATUS_COLOR[p.status as SuggestionStatus] : null
             return (
               <Link

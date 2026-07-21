@@ -38,8 +38,6 @@ import { AppThrottlerGuard } from './auth/guards/throttler.guard';
     NotificationsModule,
     SchedulerModule,
   ],
-  providers: [
-    { provide: APP_GUARD, useClass: AppThrottlerGuard },
-  ],
+  providers: [{ provide: APP_GUARD, useClass: AppThrottlerGuard }],
 })
 export class AppModule {}

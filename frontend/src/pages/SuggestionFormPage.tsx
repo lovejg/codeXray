@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { getApiErrorMessage } from '../lib/apiError'
 import { Lock } from 'lucide-react'
 import { communityApi } from '../api/community'
 import type { PostType } from '../types'
@@ -45,7 +46,7 @@ export default function SuggestionFormPage() {
       qc.invalidateQueries({ queryKey: ['posts'] })
       navigate(`/suggestions/${data.id}`)
     },
-    onError: (err: any) => setError(err.response?.data?.message ?? '오류가 발생했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '오류가 발생했습니다.')),
   })
 
   return (

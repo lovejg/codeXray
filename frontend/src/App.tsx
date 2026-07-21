@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/layout/Layout'
 import ProblemsPage from './pages/ProblemsPage'
 import ProblemDetailPage from './pages/ProblemDetailPage'
-// ProblemFormPage는 관리자 전용이므로 일반 라우트에서 제외
 import SolutionsPage from './pages/SolutionsPage'
 import SolutionFormPage from './pages/SolutionFormPage'
 import CommunityPage from './pages/CommunityPage'

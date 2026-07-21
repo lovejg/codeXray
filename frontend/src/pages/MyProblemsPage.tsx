@@ -63,7 +63,7 @@ export default function MyProblemsPage() {
               </tr>
             </thead>
             <tbody>
-              {bookmarks.map((b: any) => (
+              {bookmarks.map((b) => (
                 <tr
                   key={b.problemId}
                   className="border-t transition-colors hover:bg-white/5"
@@ -89,7 +89,7 @@ export default function MyProblemsPage() {
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     <div className="flex flex-wrap gap-1">
-                      {b.problem.tags.slice(0, 3).map((t: any) => (
+                      {b.problem.tags.slice(0, 3).map((t) => (
                         <TagBadge key={t.tag.id} name={t.tag.name} />
                       ))}
                     </div>

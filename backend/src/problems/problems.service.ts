@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProblemDto, UpdateProblemDto, ProblemFilterDto } from './dto/problem.dto';
+import {
+  CreateProblemDto,
+  UpdateProblemDto,
+  ProblemFilterDto,
+} from './dto/problem.dto';
 import { TIER_ORDER } from '../ratings/ratings.util';
 
 @Injectable()
@@ -9,9 +13,15 @@ export class ProblemsService {
 
   async findAll(filter: ProblemFilterDto) {
     const {
-      search, source, tierMin, tierMax, tagId,
-      sortBy = 'createdAt', order = 'desc',
-      page = 1, pageSize = 50,
+      search,
+      source,
+      tierMin,
+      tierMax,
+      tagId,
+      sortBy = 'createdAt',
+      order = 'desc',
+      page = 1,
+      pageSize = 50,
     } = filter;
 
     // 티어 범위가 지정되면 해당 구간의 티어들만 필터. 기본 전체 범위면 생략.
@@ -19,13 +29,18 @@ export class ProblemsService {
       tierMin !== undefined || tierMax !== undefined
         ? {
             tier: {
-              in: TIER_ORDER.slice(tierMin ?? 0, (tierMax ?? TIER_ORDER.length - 1) + 1),
+              in: TIER_ORDER.slice(
+                tierMin ?? 0,
+                (tierMax ?? TIER_ORDER.length - 1) + 1,
+              ),
             },
           }
         : {};
 
     const where = {
-      ...(search && { title: { contains: search, mode: 'insensitive' as const } }),
+      ...(search && {
+        title: { contains: search, mode: 'insensitive' as const },
+      }),
       ...(source && { source }),
       ...tierFilter,
       ...(tagId && { tags: { some: { tagId } } }),

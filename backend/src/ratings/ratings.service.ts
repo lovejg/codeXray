@@ -66,13 +66,14 @@ export class RatingsService {
         acceptanceRate: p.acceptanceRate,
         feedbackLevels: p.levelFeedbacks.map((f) => f.level),
       });
+      // 실제 update 실행되는 게 아니고 그냥 promise 배열 만들어짐
       return this.prisma.problem.update({
         where: { id: p.id },
         data: { adjustedLevel: adjusted, tier: levelToTier(adjusted) },
       });
     });
 
-    await this.prisma.$transaction(updates);
+    await this.prisma.$transaction(updates); // 실제 실행은 여기서 transaction으로 한 번에
     this.logger.log(`티어 재계산 완료`);
     return { count: problems.length };
   }

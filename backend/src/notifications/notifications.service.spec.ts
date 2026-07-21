@@ -2,20 +2,22 @@ import { Test } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+const makePrismaMock = () => ({
+  notification: {
+    create: jest.fn().mockResolvedValue({ id: 1 }),
+    createMany: jest.fn().mockResolvedValue({ count: 0 }),
+  },
+  user: {
+    findMany: jest.fn(),
+  },
+});
+
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let prisma: any;
+  let prisma: ReturnType<typeof makePrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      notification: {
-        create: jest.fn().mockResolvedValue({ id: 1 }),
-        createMany: jest.fn().mockResolvedValue({ count: 0 }),
-      },
-      user: {
-        findMany: jest.fn(),
-      },
-    };
+    prisma = makePrismaMock();
     const module = await Test.createTestingModule({
       providers: [
         NotificationsService,
@@ -62,9 +64,7 @@ describe('NotificationsService', () => {
 
   describe('createForAllAdmins — broadcast', () => {
     it('excludeUserId 와 일치하는 ADMIN 은 발송 대상에서 제외', async () => {
-      prisma.user.findMany.mockResolvedValue([
-        { id: 1 }, { id: 2 }, { id: 3 },
-      ]);
+      prisma.user.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }, { id: 3 }]);
       const ids = await service.createForAllAdmins({
         type: 'NEW_REPORT',
         payload: { test: true },

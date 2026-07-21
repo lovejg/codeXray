@@ -10,7 +10,7 @@ import {
   FAMILY_COLORS,
   familyLabel,
   type TierFamily,
-} from '../components/common/TierBadge'
+} from '../lib/tier'
 import PostTypeBadge from '../components/common/PostTypeBadge'
 
 export default function PublicProfilePage() {
@@ -161,7 +161,7 @@ export default function PublicProfilePage() {
           <p className="text-sm py-4 text-center" style={{ color: 'var(--text)' }}>작성한 글이 없습니다.</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {posts.map((p: any) => (
+            {posts.map((p) => (
               <Link
                 key={p.id}
                 to={`/community/${p.id}`}

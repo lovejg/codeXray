@@ -1,3 +1,5 @@
+import type { Tier } from '../lib/tier'
+
 export type ProblemSource =
   | 'PRACTICE'
   | 'KAKAO_BLIND'
@@ -104,9 +106,16 @@ export interface Problem {
   source: ProblemSource
   level: number
   adjustedLevel?: number
+  tier?: Tier | null
   link: string
   tags: { tag: AlgorithmTag }[]
   _count?: { solutions: number }
+}
+
+export interface Bookmark {
+  problemId: number
+  createdAt: string
+  problem: Problem
 }
 
 export interface Memo {
@@ -237,10 +246,25 @@ export type NotificationType =
   | 'TIER_UP'
   | 'STALE_SUGGESTION'
 
+export interface NotificationPayload {
+  postId?: number
+  postTitle?: string
+  postType?: PostType
+  commenterNickname?: string
+  newStatus?: SuggestionStatus
+  resolution?: ReportStatus
+  autoResolved?: boolean
+  family?: string
+  problemId?: number
+  problemTitle?: string
+  count?: number
+  oldestDays?: number
+}
+
 export interface Notification {
   id: number
   type: NotificationType
-  payload: Record<string, any>
+  payload: NotificationPayload
   isRead: boolean
   readAt?: string | null
   createdAt: string

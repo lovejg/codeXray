@@ -2,11 +2,11 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { VerificationService } from './verification.service';
+import { RefreshTokenService } from './refresh-token.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import type { GoogleProfilePayload } from './strategies/google.strategy';
@@ -19,11 +19,21 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly verification: VerificationService,
+    private readonly refreshTokens: RefreshTokenService,
   ) {}
 
   private signTokenFor(user: Pick<User, 'id' | 'email' | 'role'>) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return this.jwtService.sign(payload);
+  }
+
+  /** access token(단기) + refresh token(장기) + 공개 유저 정보를 함께 발급 */
+  private async issueSession(user: User) {
+    return {
+      accessToken: this.signTokenFor(user),
+      refreshToken: await this.refreshTokens.issue(user.id),
+      user: this.publicUser(user),
+    };
   }
 
   private publicUser(user: User) {
@@ -40,7 +50,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail && dto.email === adminEmail) {
-      // ADMIN_EMAIL 은 OAuth 전용으로 예약: 비밀번호 가입 차단
+      // ADMIN_EMAIL은 OAuth 전용으로 예약: 비밀번호 가입 차단
       throw new ForbiddenException(
         '이 이메일은 Google 로그인으로만 가입할 수 있습니다.',
       );
@@ -53,7 +63,8 @@ export class AuthService {
     );
     await this.verification.issueAndSend(created.id);
     return {
-      message: '가입이 완료되었습니다. 이메일로 전송된 인증 링크를 클릭해주세요.',
+      message:
+        '가입이 완료되었습니다. 이메일로 전송된 인증 링크를 클릭해주세요.',
       email: created.email,
     };
   }
@@ -61,7 +72,9 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || !user.password) {
-      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
+      throw new UnauthorizedException(
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
     }
     if (user.provider !== 'LOCAL') {
       throw new UnauthorizedException(
@@ -70,7 +83,10 @@ export class AuthService {
     }
 
     const valid = await bcrypt.compare(dto.password, user.password);
-    if (!valid) throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
+    if (!valid)
+      throw new UnauthorizedException(
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
 
     if (!user.emailVerified) {
       throw new ForbiddenException({
@@ -80,19 +96,30 @@ export class AuthService {
       });
     }
 
-    return {
-      accessToken: this.signTokenFor(user),
-      user: this.publicUser(user),
-    };
+    return this.issueSession(user);
   }
 
   async verifyEmail(token: string) {
     const result = await this.verification.verify(token);
     const user = await this.usersService.findById(result.userId);
+    return this.issueSession(user);
+  }
+
+  /** refresh token 로테이션 → 새 access + refresh 발급 */
+  async refresh(rawToken: string) {
+    const { userId, refreshToken } = await this.refreshTokens.rotate(rawToken);
+    const user = await this.usersService.findById(userId);
     return {
       accessToken: this.signTokenFor(user),
+      refreshToken,
       user: this.publicUser(user),
     };
+  }
+
+  /** 로그아웃 — refresh token 세션 폐기 */
+  async logout(rawToken: string) {
+    await this.refreshTokens.revoke(rawToken);
+    return { message: '로그아웃되었습니다.' };
   }
 
   async resendVerification(email: string) {
@@ -101,12 +128,7 @@ export class AuthService {
     if (!user || user.emailVerified || user.provider !== 'LOCAL') {
       return { message: '메일 발송 요청을 처리했습니다.' };
     }
-    try {
-      await this.verification.issueAndSend(user.id);
-    } catch (err: any) {
-      if (err instanceof BadRequestException) throw err;
-      throw err;
-    }
+    await this.verification.issueAndSend(user.id);
     return { message: '메일 발송 요청을 처리했습니다.' };
   }
 
@@ -129,7 +151,7 @@ export class AuthService {
       displayName: profile.displayName,
     });
 
-    // OAuth 로그인 시마다 ADMIN_EMAIL 일치하면 승격 (role 이 USER 로 남아있던 경우 보정)
+    // OAuth 로그인 시마다 ADMIN_EMAIL 일치하면 승격 (role이 USER로 남아있던 경우 보정)
     const adminEmail = process.env.ADMIN_EMAIL;
     let finalRole: UserRole = user.role;
     if (adminEmail && user.email === adminEmail && user.role !== 'ADMIN') {
@@ -137,9 +159,6 @@ export class AuthService {
       finalRole = 'ADMIN';
     }
 
-    return {
-      accessToken: this.signTokenFor({ id: user.id, email: user.email, role: finalRole }),
-      user: this.publicUser({ ...user, role: finalRole }),
-    };
+    return this.issueSession({ ...user, role: finalRole });
   }
 }

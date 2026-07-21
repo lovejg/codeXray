@@ -6,11 +6,19 @@ import {
   Param,
   ParseIntPipe,
   UseGuards,
-  Req,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RatingsService } from './ratings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  CurrentUser,
+  type AuthUser,
+} from '../auth/decorators/current-user.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { IsInt, Min, Max } from 'class-validator';
 
@@ -36,10 +44,10 @@ export class RatingsController {
   })
   submitFeedback(
     @Param('problemId', ParseIntPipe) problemId: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: SubmitFeedbackDto,
   ) {
-    return this.ratingsService.submitFeedback(req.user.id, problemId, dto.level);
+    return this.ratingsService.submitFeedback(user.id, problemId, dto.level);
   }
 
   @Get('feedback/:problemId')
@@ -48,9 +56,9 @@ export class RatingsController {
   @ApiOperation({ summary: '특정 문제에 대한 내 피드백 조회' })
   getMyFeedback(
     @Param('problemId', ParseIntPipe) problemId: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.ratingsService.getMyFeedback(req.user.id, problemId);
+    return this.ratingsService.getMyFeedback(user.id, problemId);
   }
 
   @Post('recompute-all')
@@ -59,7 +67,8 @@ export class RatingsController {
   @ApiTags('Admin')
   @ApiOperation({
     summary: '[Admin] 전체 티어 재계산',
-    description: '모든 문제의 adjustedLevel/tier 를 재계산. 주간 배치로 수동 트리거 (X-Admin-Key 필요).',
+    description:
+      '모든 문제의 adjustedLevel/tier 를 재계산. 주간 배치로 수동 트리거 (X-Admin-Key 필요).',
   })
   recomputeAll() {
     return this.ratingsService.recomputeAll();

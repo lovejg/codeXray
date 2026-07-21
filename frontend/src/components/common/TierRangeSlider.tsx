@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { TIER_ORDER, tierLabel } from './TierBadge'
+import { TIER_ORDER, tierLabel } from '../../lib/tier'
 
 interface Props {
   value: [number, number]

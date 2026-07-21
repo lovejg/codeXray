@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -13,7 +17,9 @@ export class TagsService {
   }
 
   async create(name: string) {
-    const existing = await this.prisma.algorithmTag.findUnique({ where: { name } });
+    const existing = await this.prisma.algorithmTag.findUnique({
+      where: { name },
+    });
     if (existing) throw new ConflictException('이미 존재하는 태그입니다.');
     return this.prisma.algorithmTag.create({ data: { name } });
   }

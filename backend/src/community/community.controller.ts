@@ -10,7 +10,6 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -29,6 +28,10 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminRoleGuard } from '../auth/guards/role.guard';
+import {
+  CurrentUser,
+  type AuthUser,
+} from '../auth/decorators/current-user.decorator';
 import { PostType, ReportStatus, SuggestionStatus } from '@prisma/client';
 
 @ApiTags('Community')
@@ -44,7 +47,7 @@ export class CommunityController {
       '`type` / `types` (CSV) / `problemId` / `status` / `sort=recent|votes` / `authorId` 필터. 비공개·숨김 글은 작성자/관리자만 조회 가능.',
   })
   findAll(
-    @Req() req: any,
+    @CurrentUser() user: AuthUser | null,
     @Query('type') type?: PostType,
     @Query('types') types?: string,
     @Query('problemId') problemId?: string,
@@ -57,7 +60,7 @@ export class CommunityController {
       : type
         ? [type]
         : [];
-    return this.communityService.findAllPosts(req.user, {
+    return this.communityService.findAllPosts(user, {
       types: typeList,
       problemId: problemId ? +problemId : undefined,
       status,
@@ -69,8 +72,11 @@ export class CommunityController {
   @Get('posts/:id')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: '게시글 상세 조회 (댓글 + 추천 점수 포함)' })
-  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.communityService.findOnePost(id, req.user);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser | null,
+  ) {
+    return this.communityService.findOnePost(id, user);
   }
 
   @Post('posts')
@@ -78,8 +84,8 @@ export class CommunityController {
   @Throttle({ default: { ttl: 60_000, limit: 5 } }) // 1분에 5회 (글 도배 방지)
   @ApiBearerAuth('jwt')
   @ApiOperation({ summary: '게시글 등록' })
-  createPost(@Req() req: any, @Body() dto: CreatePostDto) {
-    return this.communityService.createPost(req.user.id, dto);
+  createPost(@CurrentUser() user: AuthUser, @Body() dto: CreatePostDto) {
+    return this.communityService.createPost(user.id, dto);
   }
 
   @Put('posts/:id')
@@ -88,26 +94,34 @@ export class CommunityController {
   @ApiOperation({ summary: '게시글 수정 (작성자 본인만)' })
   updatePost(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: UpdatePostDto,
   ) {
-    return this.communityService.updatePost(id, req.user, dto);
+    return this.communityService.updatePost(id, user, dto);
   }
 
   @Delete('posts/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('jwt')
   @ApiOperation({ summary: '게시글 삭제 (작성자 또는 관리자)' })
-  deletePost(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.communityService.deletePost(id, req.user);
+  deletePost(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.communityService.deletePost(id, user);
   }
 
   @Patch('posts/:id/status')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @ApiBearerAuth('jwt')
   @ApiTags('Admin')
-  @ApiOperation({ summary: '[Admin] 건의사항 상태 변경 (IN_PROGRESS / RESOLVED)' })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
+  @ApiOperation({
+    summary: '[Admin] 건의사항 상태 변경 (IN_PROGRESS / RESOLVED)',
+  })
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
     return this.communityService.updateStatus(id, dto);
   }
 
@@ -115,8 +129,13 @@ export class CommunityController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @ApiBearerAuth('jwt')
   @ApiTags('Admin')
-  @ApiOperation({ summary: '[Admin] 관리자 공식 답변 등록/수정 (빈 문자열 → 제거)' })
-  updateAdminReply(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateAdminReplyDto) {
+  @ApiOperation({
+    summary: '[Admin] 관리자 공식 답변 등록/수정 (빈 문자열 → 제거)',
+  })
+  updateAdminReply(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAdminReplyDto,
+  ) {
     return this.communityService.updateAdminReply(id, dto);
   }
 
@@ -126,22 +145,26 @@ export class CommunityController {
   @ApiBearerAuth('jwt')
   @ApiOperation({
     summary: '게시글 추천/비추천',
-    description: 'value=1 추천 / -1 비추천. QUESTION/SOLUTION_SHARE 만 허용. 본인 글 차단.',
+    description:
+      'value=1 추천 / -1 비추천. QUESTION/SOLUTION_SHARE 만 허용. 본인 글 차단.',
   })
   vote(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: VotePostDto,
   ) {
-    return this.communityService.vote(id, req.user.id, dto);
+    return this.communityService.vote(id, user.id, dto);
   }
 
   @Delete('posts/:id/vote')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('jwt')
   @ApiOperation({ summary: '내 투표 철회' })
-  removeVote(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.communityService.removeVote(id, req.user.id);
+  removeVote(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.communityService.removeVote(id, user.id);
   }
 
   // ─── 신고 ───────────────────────────────────────────
@@ -152,10 +175,10 @@ export class CommunityController {
   @ApiOperation({ summary: '게시글 신고 (사유 필수, 같은 글 중복 신고 불가)' })
   report(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreateReportDto,
   ) {
-    return this.communityService.report(id, req.user.id, dto);
+    return this.communityService.report(id, user.id, dto);
   }
 
   @Get('admin/reports')
@@ -172,7 +195,10 @@ export class CommunityController {
   @ApiBearerAuth('jwt')
   @ApiTags('Admin')
   @ApiOperation({ summary: '[Admin] 신고 상태 변경 (HANDLED / DISMISSED)' })
-  updateReport(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateReportDto) {
+  updateReport(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReportDto,
+  ) {
     return this.communityService.updateReport(id, dto);
   }
 
@@ -182,7 +208,8 @@ export class CommunityController {
   @ApiTags('Admin')
   @ApiOperation({
     summary: '[Admin] 게시글 숨김 토글',
-    description: 'hidden=true 로 만들면 해당 게시글의 OPEN 신고들이 자동 HANDLED 로 일괄 처리.',
+    description:
+      'hidden=true 로 만들면 해당 게시글의 OPEN 신고들이 자동 HANDLED 로 일괄 처리.',
   })
   hidePost(@Param('id', ParseIntPipe) id: number, @Body() dto: HidePostDto) {
     return this.communityService.setHidden(id, dto.hidden);
@@ -196,17 +223,20 @@ export class CommunityController {
   @ApiOperation({ summary: '댓글 작성 (작성자에게 알림)' })
   createComment(
     @Param('id', ParseIntPipe) postId: number,
-    @Req() req: any,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreateCommentDto,
   ) {
-    return this.communityService.createComment(postId, req.user.id, dto);
+    return this.communityService.createComment(postId, user.id, dto);
   }
 
   @Delete('comments/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('jwt')
   @ApiOperation({ summary: '댓글 삭제 (작성자 또는 관리자)' })
-  deleteComment(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.communityService.deleteComment(id, req.user);
+  deleteComment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.communityService.deleteComment(id, user);
   }
 }

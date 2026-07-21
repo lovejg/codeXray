@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getApiErrorMessage } from '../lib/apiError'
 import { Link2, Check, AlertTriangle, Wand2, ChevronDown, ChevronUp, NotebookPen, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { solutionsApi } from '../api/solutions'
@@ -52,7 +53,7 @@ export default function SolutionFormPage() {
     queryKey: ['problems', 'all'],
     queryFn: () => problemsApi.getAll({ pageSize: 2000 }),
   })
-  const allProblems: Array<{ id: number; title: string; link: string }> = problemsData?.items ?? []
+  const allProblems = useMemo(() => problemsData?.items ?? [], [problemsData])
 
   const { data: problem } = useQuery({
     queryKey: ['problem', form.problemId],
@@ -60,6 +61,7 @@ export default function SolutionFormPage() {
     enabled: form.problemId > 0,
   })
 
+  // 수정 모드: 불러온 풀이를 폼 초기값으로 하이드레이션
   useEffect(() => {
     if (solution) {
       setForm({ problemId: solution.problemId, code: solution.code, language: solution.language })
@@ -77,14 +79,16 @@ export default function SolutionFormPage() {
     }
   }, [solution])
 
-  useEffect(() => {
+  // 코드 변경 시 언어 자동 감지 (사용자가 직접 고른 적 없을 때만)
+  const handleCodeChange = (v: string) => {
+    setForm((f) => ({ ...f, code: v }))
     if (languageTouched) return
-    const guess = detectLanguage(form.code)
+    const guess = detectLanguage(v)
     if (guess && guess !== lastDetected) {
       setLastDetected(guess)
       setForm((f) => ({ ...f, language: guess }))
     }
-  }, [form.code, languageTouched, lastDetected])
+  }
 
   const urlMatch = useMemo(() => {
     const normalized = normalizeProgrammersUrl(urlInput)
@@ -93,10 +97,13 @@ export default function SolutionFormPage() {
     return { normalized, problem: found }
   }, [urlInput, allProblems])
 
+  // URL로 붙여넣은 문제 링크가 매칭되면 problemId 자동 선택.
+  // form.problemId를 deps에 넣으면 사용자의 수동 선택과 충돌하므로 의도적으로 제외한다.
   useEffect(() => {
     if (urlMatch?.problem && urlMatch.problem.id !== form.problemId) {
       setForm((f) => ({ ...f, problemId: urlMatch.problem!.id }))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlMatch?.problem?.id])
 
   const solutionMutation = useMutation({
@@ -113,7 +120,7 @@ export default function SolutionFormPage() {
       qc.invalidateQueries({ queryKey: ['solutions'] })
       navigate(`/problems/${sol.problemId}`)
     },
-    onError: (err: any) => setError(err.response?.data?.message ?? '오류가 발생했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '오류가 발생했습니다.')),
   })
 
   const handleLanguagePick = (lang: string) => {
@@ -251,7 +258,7 @@ export default function SolutionFormPage() {
         </div>
         <CodeEditor
           value={form.code}
-          onChange={(v) => setForm({ ...form, code: v })}
+          onChange={handleCodeChange}
           language={form.language}
           minHeight="440px"
           placeholder="# 풀이 코드를 붙여넣거나 입력하세요"

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { KeyRound, X, Check } from 'lucide-react'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { authApi } from '../../api/auth'
 
 interface Props {
@@ -17,7 +18,7 @@ export default function ChangePasswordModal({ onClose }: Props) {
   const mutation = useMutation({
     mutationFn: () => authApi.changePassword({ currentPassword: current, newPassword: next }),
     onSuccess: () => setDone(true),
-    onError: (err: any) => setError(err.response?.data?.message ?? '비밀번호 변경에 실패했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '비밀번호 변경에 실패했습니다.')),
   })
 
   const canSubmit =

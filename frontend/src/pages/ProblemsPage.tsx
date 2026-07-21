@@ -9,7 +9,8 @@ import { solutionsApi } from '../api/solutions'
 import LevelBadge from '../components/common/LevelBadge'
 import SourceBadge from '../components/common/SourceBadge'
 import TagBadge from '../components/common/TagBadge'
-import TierBadge, { TIER_ORDER, tierLabel } from '../components/common/TierBadge'
+import TierBadge from '../components/common/TierBadge'
+import { TIER_ORDER, tierLabel } from '../lib/tier'
 import TierRangeSlider from '../components/common/TierRangeSlider'
 import { useAuthStore } from '../store/authStore'
 import type { ProblemSource } from '../types'
@@ -40,7 +41,9 @@ export default function ProblemsPage() {
   const PAGE_SIZE = 50
   const [page, setPage] = useState(1)
 
+  // 필터가 바뀌면 첫 페이지로 리셋 (debounce된 검색어에 반응해야 하므로 effect 사용)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1)
   }, [debouncedSearch, source, tierMin, tierMax, tagId])
 
@@ -94,7 +97,7 @@ export default function ProblemsPage() {
 
   const solutionMap = useMemo(() => {
     const m = new Map<number, number>()
-    for (const s of mySolutions as any[]) m.set(s.problemId, s.id)
+    for (const s of mySolutions) m.set(s.problemId, s.id)
     return m
   }, [mySolutions])
 
@@ -197,7 +200,7 @@ export default function ProblemsPage() {
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text)' }}
         >
           <option value="">전체 알고리즘</option>
-          {tags.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
 
@@ -221,7 +224,7 @@ export default function ProblemsPage() {
               <tr><td colSpan={user ? 8 : 6} className="text-center py-12" style={{ color: 'var(--text)' }}>불러오는 중...</td></tr>
             ) : problems.length === 0 ? (
               <tr><td colSpan={user ? 8 : 6} className="text-center py-12" style={{ color: 'var(--text)' }}>문제가 없습니다.</td></tr>
-            ) : problems.map((p: any) => (
+            ) : problems.map((p) => (
               <tr
                 key={p.id}
                 className="border-t transition-colors hover:bg-white/5"
@@ -248,7 +251,7 @@ export default function ProblemsPage() {
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell">
                   <div className="flex flex-wrap gap-1">
-                    {p.tags.slice(0, 3).map((t: any) => (
+                    {p.tags.slice(0, 3).map((t) => (
                       <TagBadge key={t.tag.id} name={t.tag.name} />
                     ))}
                   </div>

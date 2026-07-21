@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Code2 } from 'lucide-react'
+import { getApiErrorData } from '../lib/apiError'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 import OAuthButtons, { OAuthDivider } from '../components/common/OAuthButtons'
@@ -22,15 +23,15 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const data = await authApi.login(form)
-      setAuth(data.user, data.accessToken)
+      setAuth(data.user, data.accessToken, data.refreshToken)
       navigate('/')
-    } catch (err: any) {
-      const resp = err.response?.data
-      if (resp?.code === 'EMAIL_NOT_VERIFIED' || resp?.message?.code === 'EMAIL_NOT_VERIFIED') {
-        const email = resp?.email ?? resp?.message?.email ?? form.email
-        setUnverified(email)
+    } catch (err) {
+      const resp = getApiErrorData(err)
+      const nested = typeof resp?.message === 'object' ? resp.message : undefined
+      if (resp?.code === 'EMAIL_NOT_VERIFIED' || nested?.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverified(resp?.email ?? nested?.email ?? form.email)
       } else {
-        setError(resp?.message ?? '로그인에 실패했습니다.')
+        setError(typeof resp?.message === 'string' ? resp.message : '로그인에 실패했습니다.')
       }
     } finally {
       setLoading(false)

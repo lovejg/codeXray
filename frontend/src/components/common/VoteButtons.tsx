@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { communityApi } from '../../api/community'
 import { useAuthStore } from '../../store/authStore'
 
@@ -27,7 +28,7 @@ export default function VoteButtons({ postId, upvotes, downvotes, myVote, disabl
       qc.invalidateQueries({ queryKey: ['posts'] })
       setErr('')
     },
-    onError: (e: any) => setErr(e?.response?.data?.message ?? '처리 중 오류가 발생했습니다.'),
+    onError: (e) => setErr(getApiErrorMessage(e, '처리 중 오류가 발생했습니다.')),
   })
 
   const handleClick = (action: 'up' | 'down') => {

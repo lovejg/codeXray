@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNoteDto, UpdateNoteDto, NoteFilterDto } from './dto/note.dto';
 
@@ -26,7 +30,8 @@ export class NotesService {
   async findOne(id: number, userId: number) {
     const note = await this.prisma.note.findUnique({ where: { id } });
     if (!note) throw new NotFoundException('노트를 찾을 수 없습니다.');
-    if (note.userId !== userId) throw new ForbiddenException('접근 권한이 없습니다.');
+    if (note.userId !== userId)
+      throw new ForbiddenException('접근 권한이 없습니다.');
     return note;
   }
 

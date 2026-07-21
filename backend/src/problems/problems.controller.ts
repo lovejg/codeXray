@@ -12,7 +12,11 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { ProblemsService } from './problems.service';
-import { CreateProblemDto, UpdateProblemDto, ProblemFilterDto } from './dto/problem.dto';
+import {
+  CreateProblemDto,
+  UpdateProblemDto,
+  ProblemFilterDto,
+} from './dto/problem.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('Problems')
@@ -23,14 +27,18 @@ export class ProblemsController {
   @Get()
   @ApiOperation({
     summary: '문제 목록 조회',
-    description: '검색어 / 출처 / 티어 범위 / 알고리즘 태그 / 페이지네이션 지원. 인증 불필요.',
+    description:
+      '검색어 / 출처 / 티어 범위 / 알고리즘 태그 / 페이지네이션 지원. 인증 불필요.',
   })
   findAll(@Query() filter: ProblemFilterDto) {
     return this.problemsService.findAll(filter);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '문제 상세 조회', description: '태그 + 정답률 + 티어 포함.' })
+  @ApiOperation({
+    summary: '문제 상세 조회',
+    description: '태그 + 정답률 + 티어 포함.',
+  })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.problemsService.findOne(id);
   }

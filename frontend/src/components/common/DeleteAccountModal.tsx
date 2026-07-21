@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { AlertTriangle, X } from 'lucide-react'
 import { authApi } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
@@ -30,7 +31,7 @@ export default function DeleteAccountModal({ provider, nickname, onClose }: Prop
       logout()
       navigate('/login', { replace: true })
     },
-    onError: (err: any) => setError(err.response?.data?.message ?? '탈퇴에 실패했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '탈퇴에 실패했습니다.')),
   })
 
   const canSubmit = isLocal

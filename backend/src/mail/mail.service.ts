@@ -23,7 +23,9 @@ export class MailService {
       });
       this.logger.log(`SMTP 초기화: ${host}:${port}`);
     } else {
-      this.logger.warn('SMTP 환경변수 미설정 — 메일은 콘솔에만 출력됩니다 (dev 모드)');
+      this.logger.warn(
+        'SMTP 환경변수 미설정 — 메일은 콘솔에만 출력됩니다 (dev 모드)',
+      );
     }
   }
 

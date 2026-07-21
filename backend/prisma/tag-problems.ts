@@ -8,35 +8,35 @@
  * - prompt caching: 시스템 프롬프트 + taxonomy 를 cache prefix 로 사용
  * - 결과는 problem-tags.json 에 캐싱하여 재실행 시 AI 호출 스킵 (idempotent)
  */
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import Anthropic from '@anthropic-ai/sdk'
-import * as dotenv from 'dotenv'
-import * as fs from 'fs'
-import * as path from 'path'
-import { TAGS } from './seed'
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import Anthropic from '@anthropic-ai/sdk';
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+import { TAGS } from './seed';
 
-dotenv.config()
+dotenv.config();
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL = 'claude-sonnet-4-6'
-const DATA_PATH = path.join(__dirname, 'problems-data.json')
-const DESC_PATH = path.join(__dirname, 'problem-descriptions.json')
-const RESULT_PATH = path.join(__dirname, 'problem-tags.json')
+const MODEL = 'claude-sonnet-4-6';
+const DATA_PATH = path.join(__dirname, 'problems-data.json');
+const DESC_PATH = path.join(__dirname, 'problem-descriptions.json');
+const RESULT_PATH = path.join(__dirname, 'problem-tags.json');
 
 type RawProblem = {
-  programmersId: number
-  title: string
-  level: number
-  source: string
-  link: string
-}
+  programmersId: number;
+  title: string;
+  level: number;
+  source: string;
+  link: string;
+};
 
-type TagResult = { tags: string[] }
-type ResultCache = Record<string, TagResult> // programmersId -> result
+type TagResult = { tags: string[] };
+type ResultCache = Record<string, TagResult>; // programmersId -> result
 
 const SYSTEM_PROMPT = `당신은 알고리즘 코딩테스트 전문가입니다. 프로그래머스 문제를 읽고, 해당 문제를 풀기 위해 필요한 알고리즘/자료구조 태그를 고정된 목록에서 선택합니다.
 
@@ -69,23 +69,27 @@ ${TAGS.map((t) => `- ${t}`).join('\n')}
 - 비트마스킹: 집합을 비트로 표현
 
 # 출력 형식
-{"tags": ["DP", "이분탐색"]}`
+{"tags": ["DP", "이분탐색"]}`;
 
 function loadCache(p: string): ResultCache {
-  if (!fs.existsSync(p)) return {}
-  return JSON.parse(fs.readFileSync(p, 'utf-8'))
+  if (!fs.existsSync(p)) return {};
+  return JSON.parse(fs.readFileSync(p, 'utf-8'));
 }
 
 function saveCache(p: string, cache: ResultCache) {
-  fs.writeFileSync(p, JSON.stringify(cache, null, 2), 'utf-8')
+  fs.writeFileSync(p, JSON.stringify(cache, null, 2), 'utf-8');
 }
 
 function truncate(s: string, max: number): string {
-  if (s.length <= max) return s
-  return s.slice(0, max) + '\n...(이하 생략)'
+  if (s.length <= max) return s;
+  return s.slice(0, max) + '\n...(이하 생략)';
 }
 
-async function classify(title: string, description: string, level: number): Promise<string[]> {
+async function classify(
+  title: string,
+  description: string,
+  level: number,
+): Promise<string[]> {
   const userContent = `# 문제 정보
 - 제목: ${title}
 - 프로그래머스 레벨: ${level}
@@ -93,7 +97,7 @@ async function classify(title: string, description: string, level: number): Prom
 # 문제 본문
 ${truncate(description, 4000)}
 
-위 문제에 가장 적합한 알고리즘 태그를 JSON으로 출력하세요.`
+위 문제에 가장 적합한 알고리즘 태그를 JSON으로 출력하세요.`;
 
   const response = await anthropic.messages.create({
     model: MODEL,
@@ -106,133 +110,150 @@ ${truncate(description, 4000)}
       },
     ],
     messages: [{ role: 'user', content: userContent }],
-  })
+  });
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : ''
-  const match = text.match(/\{[\s\S]*?\}/)
-  if (!match) throw new Error(`JSON 응답 파싱 실패: ${text.slice(0, 200)}`)
-  const parsed = JSON.parse(match[0]) as TagResult
-  if (!Array.isArray(parsed.tags)) throw new Error(`tags 배열 없음: ${text.slice(0, 200)}`)
+  const text =
+    response.content[0].type === 'text' ? response.content[0].text : '';
+  const match = text.match(/\{[\s\S]*?\}/);
+  if (!match) throw new Error(`JSON 응답 파싱 실패: ${text.slice(0, 200)}`);
+  const parsed = JSON.parse(match[0]) as TagResult;
+  if (!Array.isArray(parsed.tags))
+    throw new Error(`tags 배열 없음: ${text.slice(0, 200)}`);
 
   // taxonomy 검증
-  const invalid = parsed.tags.filter((t) => !TAGS.includes(t))
+  const invalid = parsed.tags.filter((t) => !TAGS.includes(t));
   if (invalid.length > 0) {
-    console.warn(`    ⚠️  taxonomy 외 태그 무시: ${invalid.join(', ')}`)
+    console.warn(`    ⚠️  taxonomy 외 태그 무시: ${invalid.join(', ')}`);
   }
-  const valid = parsed.tags.filter((t) => TAGS.includes(t))
-  if (valid.length === 0) throw new Error(`유효 태그 0개: ${JSON.stringify(parsed.tags)}`)
-  return valid.slice(0, 3)
+  const valid = parsed.tags.filter((t) => TAGS.includes(t));
+  if (valid.length === 0)
+    throw new Error(`유효 태그 0개: ${JSON.stringify(parsed.tags)}`);
+  return valid.slice(0, 3);
 }
 
 async function writeTagsToDb(results: ResultCache) {
-  console.log('\n💾 DB에 ProblemTag upsert 중...')
+  console.log('\n💾 DB에 ProblemTag upsert 중...');
 
   // 태그 이름 -> id 매핑
-  const allTags = await prisma.algorithmTag.findMany()
-  const nameToId = new Map(allTags.map((t) => [t.name, t.id]))
+  const allTags = await prisma.algorithmTag.findMany();
+  const nameToId = new Map(allTags.map((t) => [t.name, t.id]));
 
   // link -> problem id 매핑 (programmersId 는 DB 에 없으므로 link 로 매칭)
-  const allProblems = await prisma.problem.findMany({ select: { id: true, link: true } })
-  const linkToId = new Map(allProblems.map((p) => [p.link, p.id]))
+  const allProblems = await prisma.problem.findMany({
+    select: { id: true, link: true },
+  });
+  const linkToId = new Map(allProblems.map((p) => [p.link, p.id]));
 
-  const problems: RawProblem[] = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'))
-  let upserted = 0
-  let skipped = 0
+  const problems: RawProblem[] = JSON.parse(
+    fs.readFileSync(DATA_PATH, 'utf-8'),
+  );
+  let upserted = 0;
+  let skipped = 0;
 
   for (const p of problems) {
-    const result = results[String(p.programmersId)]
+    const result = results[String(p.programmersId)];
     if (!result) {
-      skipped++
-      continue
+      skipped++;
+      continue;
     }
-    const problemId = linkToId.get(p.link)
+    const problemId = linkToId.get(p.link);
     if (!problemId) {
-      skipped++
-      continue
+      skipped++;
+      continue;
     }
 
-    await prisma.problemTag.deleteMany({ where: { problemId } })
+    await prisma.problemTag.deleteMany({ where: { problemId } });
     await prisma.problemTag.createMany({
       data: result.tags
         .map((name) => nameToId.get(name))
         .filter((id): id is number => id != null)
         .map((tagId) => ({ problemId, tagId })),
       skipDuplicates: true,
-    })
-    upserted++
+    });
+    upserted++;
   }
 
-  console.log(`✓ ProblemTag upsert 완료: ${upserted}개 (스킵 ${skipped}개)`)
+  console.log(`✓ ProblemTag upsert 완료: ${upserted}개 (스킵 ${skipped}개)`);
 }
 
 async function main() {
-  console.log('======================================')
-  console.log('  AI 알고리즘 태그 분류 배치')
-  console.log(`  Model: ${MODEL}`)
-  console.log('======================================\n')
+  console.log('======================================');
+  console.log('  AI 알고리즘 태그 분류 배치');
+  console.log(`  Model: ${MODEL}`);
+  console.log('======================================\n');
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY 환경변수가 필요합니다')
+    throw new Error('ANTHROPIC_API_KEY 환경변수가 필요합니다');
   }
 
-  const problems: RawProblem[] = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'))
-  const descriptions: Record<string, string> = JSON.parse(fs.readFileSync(DESC_PATH, 'utf-8'))
-  const cache = loadCache(RESULT_PATH)
+  const problems: RawProblem[] = JSON.parse(
+    fs.readFileSync(DATA_PATH, 'utf-8'),
+  );
+  const descriptions: Record<string, string> = JSON.parse(
+    fs.readFileSync(DESC_PATH, 'utf-8'),
+  );
+  const cache = loadCache(RESULT_PATH);
 
   const todo = problems.filter((p) => {
-    const key = String(p.programmersId)
-    return descriptions[key] && !cache[key]
-  })
+    const key = String(p.programmersId);
+    return descriptions[key] && !cache[key];
+  });
 
-  console.log(`📊 전체 ${problems.length}개, 본문 있음 ${Object.keys(descriptions).length}개, 캐시 ${Object.keys(cache).length}개, 분류 대상 ${todo.length}개\n`)
+  console.log(
+    `📊 전체 ${problems.length}개, 본문 있음 ${Object.keys(descriptions).length}개, 캐시 ${Object.keys(cache).length}개, 분류 대상 ${todo.length}개\n`,
+  );
 
   if (todo.length === 0) {
-    console.log('✅ 이미 모두 분류됨, DB 반영만 실행')
-    await writeTagsToDb(cache)
-    return
+    console.log('✅ 이미 모두 분류됨, DB 반영만 실행');
+    await writeTagsToDb(cache);
+    return;
   }
 
-  let totalIn = 0
-  let totalOut = 0
-  let totalCached = 0
-  let success = 0
-  let failed = 0
-  const SAVE_EVERY = 20
+  const totalIn = 0;
+  const totalOut = 0;
+  const totalCached = 0;
+  let success = 0;
+  let failed = 0;
+  const SAVE_EVERY = 20;
 
   try {
     for (let i = 0; i < todo.length; i++) {
-      const p = todo[i]
-      const key = String(p.programmersId)
-      process.stdout.write(`🔎 [${i + 1}/${todo.length}] ${p.title.slice(0, 40)}... `)
+      const p = todo[i];
+      const key = String(p.programmersId);
+      process.stdout.write(
+        `🔎 [${i + 1}/${todo.length}] ${p.title.slice(0, 40)}... `,
+      );
 
       try {
-        const tags = await classify(p.title, descriptions[key], p.level)
-        cache[key] = { tags }
-        success++
-        process.stdout.write(`✓ [${tags.join(', ')}]\n`)
+        const tags = await classify(p.title, descriptions[key], p.level);
+        cache[key] = { tags };
+        success++;
+        process.stdout.write(`✓ [${tags.join(', ')}]\n`);
       } catch (e: any) {
-        failed++
-        process.stdout.write(`✗ ${e.message}\n`)
+        failed++;
+        process.stdout.write(`✗ ${e.message}\n`);
       }
 
       if ((i + 1) % SAVE_EVERY === 0) {
-        saveCache(RESULT_PATH, cache)
-        process.stdout.write(`  💾 중간 저장 (${Object.keys(cache).length}개)\n`)
+        saveCache(RESULT_PATH, cache);
+        process.stdout.write(
+          `  💾 중간 저장 (${Object.keys(cache).length}개)\n`,
+        );
       }
     }
   } finally {
-    saveCache(RESULT_PATH, cache)
+    saveCache(RESULT_PATH, cache);
   }
 
-  console.log(`\n📊 AI 호출 결과: 성공 ${success}, 실패 ${failed}`)
-  console.log(`💾 결과 저장: ${RESULT_PATH}`)
+  console.log(`\n📊 AI 호출 결과: 성공 ${success}, 실패 ${failed}`);
+  console.log(`💾 결과 저장: ${RESULT_PATH}`);
 
-  await writeTagsToDb(cache)
-  await prisma.$disconnect()
+  await writeTagsToDb(cache);
+  await prisma.$disconnect();
 }
 
 main().catch(async (e) => {
-  console.error(e)
-  await prisma.$disconnect()
-  process.exit(1)
-})
+  console.error(e);
+  await prisma.$disconnect();
+  process.exit(1);
+});

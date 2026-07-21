@@ -1,9 +1,24 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { CreateSolutionDto, UpdateSolutionDto, UpsertMemoDto } from './dto/solution.dto';
+import {
+  CreateSolutionDto,
+  UpdateSolutionDto,
+  UpsertMemoDto,
+} from './dto/solution.dto';
+import { Tier } from '@prisma/client';
 
-const TIER_FAMILIES = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND'] as const;
+const TIER_FAMILIES = [
+  'BRONZE',
+  'SILVER',
+  'GOLD',
+  'PLATINUM',
+  'DIAMOND',
+] as const;
 
 @Injectable()
 export class SolutionsService {
@@ -34,7 +49,8 @@ export class SolutionsService {
       },
     });
     if (!solution) throw new NotFoundException('풀이를 찾을 수 없습니다.');
-    if (solution.userId !== userId) throw new ForbiddenException('접근 권한이 없습니다.');
+    if (solution.userId !== userId)
+      throw new ForbiddenException('접근 권한이 없습니다.');
     return solution;
   }
 
@@ -48,7 +64,12 @@ export class SolutionsService {
     const solution = await this.prisma.solution.upsert({
       where: { userId_problemId: { userId, problemId: dto.problemId } },
       update: { code: dto.code, language: dto.language ?? 'python' },
-      create: { userId, problemId: dto.problemId, code: dto.code, language: dto.language ?? 'python' },
+      create: {
+        userId,
+        problemId: dto.problemId,
+        code: dto.code,
+        language: dto.language ?? 'python',
+      },
       include: { problem: true, memo: true },
     });
 
@@ -56,11 +77,15 @@ export class SolutionsService {
     if (!existing && solution.problem.tier) {
       const family = String(solution.problem.tier).split('_')[0];
       if ((TIER_FAMILIES as readonly string[]).includes(family)) {
+        // 같은 family 에 속한 티어들 (enum 필드라 startsWith 대신 in 사용)
+        const familyTiers = Object.values(Tier).filter((t) =>
+          t.startsWith(`${family}_`),
+        );
         const priorCount = await this.prisma.solution.count({
           where: {
             userId,
             problemId: { not: dto.problemId },
-            problem: { tier: { startsWith: family + '_' } as any },
+            problem: { tier: { in: familyTiers } },
           },
         });
         if (priorCount === 0) {

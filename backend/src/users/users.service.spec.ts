@@ -4,22 +4,21 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+const makePrismaMock = () => ({
+  user: {
+    findUnique: jest.fn(),
+    delete: jest.fn().mockResolvedValue({}),
+  },
+});
+
 describe('UsersService.deleteAccount', () => {
   let service: UsersService;
-  let prisma: any;
+  let prisma: ReturnType<typeof makePrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      user: {
-        findUnique: jest.fn(),
-        delete: jest.fn().mockResolvedValue({}),
-      },
-    };
+    prisma = makePrismaMock();
     const module = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [UsersService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(UsersService);
   });
@@ -39,7 +38,9 @@ describe('UsersService.deleteAccount', () => {
     });
 
     it('비밀번호 누락 → BadRequestException', async () => {
-      await expect(service.deleteAccount(1, {})).rejects.toThrow(BadRequestException);
+      await expect(service.deleteAccount(1, {})).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.user.delete).not.toHaveBeenCalled();
     });
 
@@ -70,7 +71,9 @@ describe('UsersService.deleteAccount', () => {
     });
 
     it('confirmNickname 누락 → BadRequestException', async () => {
-      await expect(service.deleteAccount(2, {})).rejects.toThrow(BadRequestException);
+      await expect(service.deleteAccount(2, {})).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.user.delete).not.toHaveBeenCalled();
     });
 

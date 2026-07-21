@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { getApiErrorMessage } from '../lib/apiError'
 import { Wand2 } from 'lucide-react'
 import { communityApi } from '../api/community'
 import type { PostType } from '../types'
@@ -38,14 +39,15 @@ export default function CommunityFormPage() {
   const [error, setError] = useState('')
 
   // 코드 변경 시 언어 자동 감지 (사용자가 직접 고른 적 없을 때만)
-  useEffect(() => {
+  const handleCodeChange = (val: string) => {
+    setCode(val)
     if (languageTouched) return
-    const guess = detectLanguage(code)
+    const guess = detectLanguage(val)
     if (guess && guess !== lastDetected) {
       setLastDetected(guess)
       setLanguage(guess)
     }
-  }, [code, languageTouched, lastDetected])
+  }
 
   const isShare = type === 'SOLUTION_SHARE'
 
@@ -75,7 +77,7 @@ export default function CommunityFormPage() {
       qc.invalidateQueries({ queryKey: ['posts'] })
       navigate(`/community/${data.id}`)
     },
-    onError: (err: any) => setError(err.response?.data?.message ?? '오류가 발생했습니다.'),
+    onError: (err) => setError(getApiErrorMessage(err, '오류가 발생했습니다.')),
   })
 
   return (
@@ -190,7 +192,7 @@ export default function CommunityFormPage() {
                 </div>
                 <CodeEditor
                   value={code}
-                  onChange={setCode}
+                  onChange={handleCodeChange}
                   language={language}
                   minHeight="360px"
                   placeholder="# 코드를 붙여넣거나 입력하세요"

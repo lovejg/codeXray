@@ -10,7 +10,7 @@ import {
 import type { ReactNode } from 'react'
 import type { Notification, NotificationType } from '../types'
 import { STATUS_LABEL } from '../types'
-import { familyLabel, type TierFamily } from '../components/common/TierBadge'
+import { familyLabel, type TierFamily } from '../lib/tier'
 
 export interface FormattedNotification {
   icon: ReactNode
@@ -26,7 +26,7 @@ function isSuggestionType(t: string) {
   return t === 'FEEDBACK' || t === 'BUG_REPORT' || t === 'FEATURE_REQUEST'
 }
 
-function postLink(postId: number, postType?: string) {
+function postLink(postId: number | undefined, postType?: string) {
   if (postType && isSuggestionType(postType)) return `/suggestions/${postId}`
   return `/community/${postId}`
 }

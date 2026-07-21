@@ -9,7 +9,7 @@ export interface NaverProfilePayload {
   displayName: string;
 }
 
-type VerifyDone = (error: any, user?: any) => void;
+type VerifyDone = (error: Error | null, user?: NaverProfilePayload) => void;
 
 @Injectable()
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
@@ -39,7 +39,8 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     const payload: NaverProfilePayload = {
       providerId: profile.id,
       email: profile.email,
-      displayName: profile.nickname ?? profile.name ?? profile.email.split('@')[0],
+      displayName:
+        profile.nickname ?? profile.name ?? profile.email.split('@')[0],
     };
     done(null, payload);
   }

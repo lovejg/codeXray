@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { Code2, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
+import { getApiErrorMessage } from '../lib/apiError'
 
 type Status = 'pending' | 'success' | 'error'
 
@@ -10,29 +11,25 @@ export default function VerifyEmailPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
-  const [status, setStatus] = useState<Status>('pending')
-  const [error, setError] = useState('')
+  const token = params.get('token')
+  const [status, setStatus] = useState<Status>(token ? 'pending' : 'error')
+  const [error, setError] = useState(token ? '' : '인증 토큰이 없습니다.')
 
   useEffect(() => {
-    const token = params.get('token')
-    if (!token) {
-      setStatus('error')
-      setError('인증 토큰이 없습니다.')
-      return
-    }
+    if (!token) return
 
     authApi
       .verifyEmail(token)
       .then((data) => {
-        setAuth(data.user, data.accessToken)
+        setAuth(data.user, data.accessToken, data.refreshToken)
         setStatus('success')
         setTimeout(() => navigate('/'), 1500)
       })
       .catch((err) => {
         setStatus('error')
-        setError(err.response?.data?.message ?? '인증에 실패했습니다.')
+        setError(getApiErrorMessage(err, '인증에 실패했습니다.'))
       })
-  }, [params, setAuth, navigate])
+  }, [token, setAuth, navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>

@@ -29,8 +29,28 @@ model User {
   postVotes          PostVote[]
   postReports        PostReport[]
   notifications      Notification[]
+  refreshTokens      RefreshToken[]
 
   @@unique([provider, providerId])
+}
+
+// ─── Refresh Token (로테이션 + 재사용 감지) ──────────────
+// raw 토큰은 클라이언트만 보관하고, 서버는 SHA-256 해시만 저장한다.
+// 같은 로그인 세션은 하나의 family 를 공유하며, 폐기된 토큰이 재사용되면
+// 탈취로 간주하고 family 전체를 폐기한다.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    Int
+  family    String // 세션 식별자 (로테이션 시 유지)
+  expiresAt DateTime
+  revokedAt DateTime? // 로테이션/로그아웃/재사용감지 시 설정
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
 }
 
 enum UserRole {
@@ -78,6 +98,20 @@ model Problem {
   levelFeedbacks  LevelFeedback[]
 }
 
+enum ProblemSource {
+  PRACTICE           // 연습문제, 코딩 기초 트레이닝, 코딩테스트 입문
+  KAKAO_BLIND        // 카카오 블라인드 공채
+  KAKAO_INTERNSHIP   // 카카오 인턴십
+  KAKAO_CODE         // 카카오코드
+  MONTHLY_CHALLENGE  // 월간 코드 챌린지
+  WEEKLY_CHALLENGE   // 위클리 챌린지
+  SUMMER_WINTER      // Summer/Winter Coding
+  PCCE               // PCCE 기출문제
+  PCCP               // PCCP 기출문제
+  SQL                // SQL 문제 (SELECT, JOIN 등)
+  OTHER              // 현대모비스, Dev-Matching 등
+}
+
 // ─── 커스텀 티어 (5 family × 3 sub = 15 tiers) ──────────────
 enum Tier {
   BRONZE_III
@@ -110,20 +144,6 @@ model LevelFeedback {
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, problemId]) // 한 사용자는 한 문제에 하나의 피드백만
-}
-
-enum ProblemSource {
-  PRACTICE           // 연습문제, 코딩 기초 트레이닝, 코딩테스트 입문
-  KAKAO_BLIND        // 카카오 블라인드 공채
-  KAKAO_INTERNSHIP   // 카카오 인턴십
-  KAKAO_CODE         // 카카오코드
-  MONTHLY_CHALLENGE  // 월간 코드 챌린지
-  WEEKLY_CHALLENGE   // 위클리 챌린지
-  SUMMER_WINTER      // Summer/Winter Coding
-  PCCE               // PCCE 기출문제
-  PCCP               // PCCP 기출문제
-  SQL                // SQL 문제 (SELECT, JOIN 등)
-  OTHER              // 현대모비스, Dev-Matching 등
 }
 
 // ─── 알고리즘 태그 ──────────────────────────────────────────

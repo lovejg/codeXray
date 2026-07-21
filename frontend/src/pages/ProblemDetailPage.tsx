@@ -56,7 +56,7 @@ export default function ProblemDetailPage() {
     enabled: !!user,
   })
 
-  const mySolution = solutions.find((s: any) => s.problemId === Number(id))
+  const mySolution = solutions.find((s) => s.problemId === Number(id))
 
   const { data: myFeedback, isSuccess: feedbackLoaded } = useQuery({
     queryKey: ['feedback', id],
@@ -65,11 +65,11 @@ export default function ProblemDetailPage() {
   })
 
   const starMutation = useMutation({
-    mutationFn: () => solutionsApi.toggleStar(mySolution.id),
+    mutationFn: () => solutionsApi.toggleStar(mySolution!.id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['solutions'] }),
   })
 
-  const { data: relatedPosts = [] } = useQuery<any[]>({
+  const { data: relatedPosts = [] } = useQuery({
     queryKey: ['posts', 'problem', id, communityTab],
     queryFn: () =>
       communityApi.getPosts({
@@ -142,7 +142,7 @@ export default function ProblemDetailPage() {
               <TierBadge tier={problem.tier} size="md" />
               <SourceBadge source={problem.source} />
               <LevelBadge level={problem.level} />
-              {problem.tags.map((t: any) => <TagBadge key={t.tag.id} name={t.tag.name} />)}
+              {problem.tags.map((t) => <TagBadge key={t.tag.id} name={t.tag.name} />)}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

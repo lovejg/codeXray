@@ -71,7 +71,7 @@ export default function SolutionsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {solutions.map((s: any) => (
+          {solutions.map((s) => (
             <div key={s.id} className="rounded-xl border p-4 flex items-start gap-4 transition-colors hover:bg-white/5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
               <div className="flex-1 flex flex-col gap-2">
                 <Link to={`/problems/${s.problemId}`} className="font-medium hover:underline" style={{ color: 'var(--text-h)' }}>
@@ -80,7 +80,7 @@ export default function SolutionsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <SourceBadge source={s.problem.source} />
                   <LevelBadge level={s.problem.level} />
-                  {s.problem.tags.slice(0, 3).map((t: any) => (
+                  {s.problem.tags.slice(0, 3).map((t) => (
                     <TagBadge key={t.tag.id} name={t.tag.name} />
                   ))}
                 </div>
